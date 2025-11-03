@@ -1,0 +1,14 @@
+parameters:
+  - name: projectName
+    type: string
+
+  - name: artifactName
+    type: string
+
+  - name: artifactDir
+    type: string
+
+steps:
+  - publish: $(Build.SourcesDirectory)/${{ parameters.artifactDir }}
+    displayName: publish artifact - ${{ parameters.projectName }} - ${{ parameters.artifactName }}
+    artifact: ${{ parameters.artifactName }}
