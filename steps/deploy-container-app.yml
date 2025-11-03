@@ -1,0 +1,104 @@
+parameters:
+  - name: environmentName
+    type: string
+
+  - name: projectName
+    type: string
+
+  - name: projectType
+    type: string
+
+  - name: awsRegion
+    type: string
+
+  # semi-colon separated list, e.g. "path1;path2;..."
+  - name: awsSSMParamPath
+    type: string
+
+  - name: ciFolder
+    type: string
+    default: ci
+
+  - name: loadEnvVarScriptUrl
+    type: string
+
+  - name: envFileStorePath
+    type: string
+
+steps:
+  - template: ./load-env-vars.yml
+    parameters:
+      projectName: ${{ parameters.projectName }}
+      awsRegion: ${{ parameters.awsRegion }}
+      awsSSMParamPath: ${{ parameters.awsSSMParamPath }}
+      ciFolder: ${{ parameters.ciFolder }}
+      loadEnvVarScriptUrl: ${{ parameters.loadEnvVarScriptUrl }}
+
+  - displayName: deploy container app - ${{ parameters.projectName }} - ${{ parameters.environmentName }}
+    script: |
+      ECS_FOLDER="$(echo ${{ parameters.ciFolder }})/ecs"
+
+      ECS_TASK_DEFINITION_TEMPLATE="$ECS_FOLDER/task.json"
+      ECS_TASK="$ECS_FOLDER/task-ecs.json"
+
+      touch $ECS_TASK_DEFINITION_TEMPLATE
+      touch $ECS_TASK
+
+      LOCAL_PORT_MAPPING='[]'
+      if [[ $CONTAINER_PORT != "0" ]]; then
+        LOCAL_PORT_MAPPING='[
+          {
+            "name": "'${PORT_MAPPING_NAME}'",
+            "protocol": "tcp",
+            "containerPort": '${CONTAINER_PORT}',
+            "hostPort": '${CONTAINER_PORT}'
+          }
+        ]'
+      fi
+
+      echo $(aws ecr get-login-password | docker login --username AWS --password-stdin $IMAGE_REGISTRY_BASE_URL)
+
+      echo '{
+        "family": "'${TASK_FAMILY}'",
+        "taskRoleArn": "'${TASK_ROLE_ARN}'",
+        "executionRoleArn": "'${TASK_ROLE_ARN}'",
+        "networkMode": "'${NETWORK_MODE}'",
+        "requiresCompatibilities": ["EC2"],
+        "cpu": "'${CONTAINER_CPU}'",
+        "memory": "'${CONTAINER_MEMORY_RESERVATION}'",
+        "containerDefinitions": [
+          {
+            "name": "'${CONTAINER_NAME}'",
+            "essential": true,
+            "image": "'$DKR_IMAGE'",
+            "cpu": '${CONTAINER_CPU}',
+            "memory": '${CONTAINER_MEMORY_RESERVATION}',
+            "portMappings": '${LOCAL_PORT_MAPPING}',
+            "logConfiguration": {
+              "logDriver": "'${LOG_DRIVER}'",
+              "options": {
+                "awslogs-group": "'${LOG_GROUP}'",
+                "awslogs-region": "'${AWS_REGION}'",
+                "awslogs-stream-prefix": "'${LOG_PREFIX}'"
+              }
+            },
+            "environmentFiles": [
+              {
+                "value": "arn:aws:s3:::'${{ parameters.envFileStorePath }}'/'.env'",
+                "type": "s3"
+              }
+            ]
+          }
+        ]
+      }' >${ECS_TASK_DEFINITION_TEMPLATE}
+
+      echo $(cat ${ECS_TASK_DEFINITION_TEMPLATE}) >${ECS_TASK}
+
+      aws ecs register-task-definition --family ${TASK_FAMILY} --cli-input-json file://${ECS_TASK}
+
+      TASK_REVISION=$(aws ecs describe-task-definition --task-definition ${TASK_FAMILY} | jq '.taskDefinition.revision')
+
+      aws ecs update-service --force-new-deployment \
+        --cluster ${CLUSTER_NAME} \
+        --service ${SERVICE_NAME} \
+        --task-definition ${TASK_FAMILY}:${TASK_REVISION}
