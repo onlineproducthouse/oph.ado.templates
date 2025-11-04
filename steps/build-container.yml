@@ -1,52 +1,22 @@
 parameters:
-  - name: projectName
+  - name: dkrECRUrl
     type: string
 
-  - name: awsRegion
-    type: string
-    default: ci
-
-  # semi-colon separated list, e.g. "path1;path2;..."
-  - name: awsSSMParamPath
+  - name: dkrTag
     type: string
 
-  - name: ciFolder
+  - name: dkrFile
     type: string
-    default: ci
-
-  - name: loadEnvVarScriptUrl
-    type: string
-
-  - name: dkrImageTag
-    type: string
-
-  - name: artifactName
-    type: string
-
-  - name: artifactPath
-    type: string
+    default: Dockerfile
 
 steps:
-  - template: ./load-env-vars.yml
-    parameters:
-      projectName: ${{ parameters.projectName }}
-      awsRegion: ${{ parameters.awsRegion }}
-      awsSSMParamPath: ${{ parameters.awsSSMParamPath }}
-      ciFolder: ${{ parameters.ciFolder }}
-      loadEnvVarScriptUrl: ${{ parameters.loadEnvVarScriptUrl }}
-
-  - displayName: build container - ${{ parameters.projectName }}
+  - displayName: docker build
     script: |
-      echo $(aws ecr get-login-password | docker login --username AWS --password-stdin $IMAGE_REGISTRY_BASE_URL)
-      IMAGE_TAG="$IMAGE_REPOSITORY_NAME:${{ parameters.dkrImageTag }}"
-      docker buildx create --use --name multiarch
-      docker buildx build --push --force-rm --file $DOCKERFILE \
-        --tag $IMAGE_REGISTRY_BASE_URL/$IMAGE_TAG \
-        --build-arg IMAGE_REGISTRY_BASE_URL=$IMAGE_REGISTRY_BASE_URL \
-        --platform=linux/arm64,linux/amd64 \
+      echo $(aws ecr get-login-password | docker login --username AWS --password-stdin ${{ parameters.dkrECRUrl }})
 
-  - template: ./post-build.yml
-    parameters:
-      projectName: ${{ parameters.projectName }}
-      artifactName: ${{ parameters.artifactName }}
-      artifactPath: ${{ parameters.artifactPath }}
+      docker buildx create --use --name multiarch
+
+      docker buildx build --push --force-rm --file ${{ parameters.dkrFile }} \
+        --build-arg IMAGE_REGISTRY_BASE_URL=${{ parameters.dkrECRUrl }} \
+        --tag ${{ parameters.dkrTag }} \
+        --platform=linux/arm64,linux/amd64

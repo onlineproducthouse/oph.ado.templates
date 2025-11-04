@@ -1,24 +1,22 @@
 parameters:
-  - name: projectName
-    type: string
-
   - name: awsRegion
     type: string
     default: ci
 
-  # semi-colon separated list, e.g. "path1;path2;..."
-  - name: awsSSMParamPath
+  - name: awsSSMParamPath # semi-colon separated list, e.g. "path1;path2;..."
     type: string
-
-  - name: ciFolder
-    type: string
-    default: ci
 
   - name: loadEnvVarScriptUrl
     type: string
 
+  - name: loadEnvVarScriptPath
+    type: string
+
 steps:
-  - displayName: load env vars - ${{ parameters.projectName }}
+  - displayName: load env variables
     script: |
-      aws s3 cp $(echo "${{ parameters.loadEnvVarScriptUrl }}") $(echo "${{ parameters.ciFolder }}/env-script.sh")
-      source $(echo "${{ parameters.ciFolder }}/env-script.sh") ${{ parameters.awsRegion }} ${{ parameters.awsSSMParamPath }} $(pwd)
+      aws s3 cp $(echo "${{ parameters.loadEnvVarScriptUrl }}") $(echo "${{ parameters.loadEnvVarScriptPath }}")
+      source $(echo "${{ parameters.loadEnvVarScriptPath }}") \
+        ${{ parameters.awsRegion }} \
+        ${{ parameters.awsSSMParamPath }} \
+        $(pwd)

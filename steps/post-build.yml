@@ -1,14 +1,14 @@
 parameters:
-  - name: projectName
+  - name: artifactName # optional, leave blank if you do not need artifacts
     type: string
-
-  - name: artifactName
-    type: string
+    default: ""
 
   - name: artifactPath
     type: string
+    default: ""
 
 steps:
-  - publish: $(Build.SourcesDirectory)/${{ parameters.artifactPath }}
-    displayName: publish artifact - ${{ parameters.projectName }} - ${{ parameters.artifactName }}
-    artifact: ${{ parameters.artifactName }}
+  - ${{ if ne(parameters.artifactName, '') }}:
+      - publish: ${{ parameters.artifactPath }}
+        displayName: publish artifact - ${{ parameters.artifactName }}
+        artifact: ${{ parameters.artifactName }}

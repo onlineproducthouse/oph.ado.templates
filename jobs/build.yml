@@ -1,0 +1,69 @@
+parameters:
+  - name: projectName
+    type: string
+
+  - name: projectType # required, must be one of: cloud, container, web
+    type: string
+    values:
+      - cloud
+      - container
+      - web
+
+  - name: artifactName # optional, leave blank if you do not need artifacts
+    type: string
+    default: ""
+
+  - name: artifactPath
+    type: string
+    default: ""
+
+  - name: dkrECRUrl # required, if `projectType` = 'container'
+    type: string
+    default: ""
+
+  - name: dkrRegistryName # required, if `projectType` = 'container'
+    type: string
+    default: ""
+
+  - name: dkrImageTag # required, if `projectType` = 'container'
+    type: string
+    default: latest
+
+  - name: dkrFile # required, if `projectType` = 'container'
+    type: string
+    default: Dockerfile
+
+variables:
+  - name: loadEnvVarScriptPath
+    value: ci/env-script.sh
+
+jobs:
+  - job: build
+    displayName: build ${{ parameters.projectType }} - ${{ parameters.projectName }}
+    steps:
+      - ${{ if eq(parameters.projectType, 'cloud') }}:
+          - template: ../steps/build-cloud.yml
+
+      - ${{ elseif eq(parameters.projectType, 'container') }}:
+          - template: ../steps/build-container.yml
+            parameters:
+              dkrECRUrl: ${{ parameters.dkrECRUrl }}
+              dkrTag: ${{ parameters.dkrECRUrl }}/${{ parameters.dkrRegistryName }}:${{ parameters.dkrImageTag }}
+              dkrFile: ${{ parameters.dkrFile }}
+
+      - ${{ elseif eq(parameters.projectType, 'web') }}:
+          - template: ../steps/load-env-vars.yml
+            parameters:
+              awsRegion: ${{ parameters.awsRegion }}
+              awsSSMParamPath: ${{ parameters.awsSSMParamPath }}
+              loadEnvVarScriptUrl: ${{ parameters.loadEnvVarScriptUrl }}
+              loadEnvVarScriptPath: $(loadEnvVarScriptPath)
+
+          - template: ../steps/build-web.yml
+            parameters:
+              loadEnvVarScriptPath: $(loadEnvVarScriptPath)
+
+      - template: ../steps/post-build.yml
+        parameters:
+          artifactName: ${{ parameters.artifactName }}
+          artifactPath: $(Build.SourcesDirectory)/${{ parameters.artifactPath }}

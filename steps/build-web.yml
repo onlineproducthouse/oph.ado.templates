@@ -1,48 +1,15 @@
 parameters:
-  - name: projectName
-    type: string
-
-  - name: awsRegion
-    type: string
-    default: ci
-
-  # semi-colon separated list, e.g. "path1;path2;..."
-  - name: awsSSMParamPath
-    type: string
-
-  - name: ciFolder
-    type: string
-    default: ci
-
-  - name: loadEnvVarScriptUrl
-    type: string
-
-  - name: artifactName
-    type: string
-
-  - name: artifactPath
+  - name: loadEnvVarScriptPath
     type: string
 
 steps:
-  - template: ./load-env-vars.yml
-    parameters:
-      projectName: ${{ parameters.projectName }}
-      awsRegion: ${{ parameters.awsRegion }}
-      awsSSMParamPath: ${{ parameters.awsSSMParamPath }}
-      ciFolder: ${{ parameters.ciFolder }}
-      loadEnvVarScriptUrl: ${{ parameters.loadEnvVarScriptUrl }}
-
-  - displayName: setup nodejs - ${{ parameters.projectName }}
+  - displayName: install nodejs
     task: NodeTool@0
     inputs:
       versionSource: spec
       versionSpec: 22.13.1
 
-  - displayName: build web - ${{ parameters.projectName }}
-    script: source $(echo "${{ parameters.ciFolder }}/env-script.sh") && npm run build
-
-  - template: ./post-build.yml
-    parameters:
-      projectName: ${{ parameters.projectName }}
-      artifactName: ${{ parameters.artifactName }}
-      artifactPath: ${{ parameters.artifactPath }}
+  - displayName: npm run build
+    script: |
+      source $(echo "${{ parameters.loadEnvVarScriptPath }}") \
+        && npm run build
