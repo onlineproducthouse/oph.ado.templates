@@ -26,6 +26,7 @@ parameters:
 
   - name: script
     type: string
+    default: echo 'Tests not implemented.'
 
 steps:
   - template: ./load-env-vars.yml

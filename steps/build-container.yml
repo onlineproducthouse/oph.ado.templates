@@ -23,7 +23,7 @@ parameters:
   - name: artifactName
     type: string
 
-  - name: artifactDir
+  - name: artifactPath
     type: string
 
 steps:
@@ -40,15 +40,13 @@ steps:
       echo $(aws ecr get-login-password | docker login --username AWS --password-stdin $IMAGE_REGISTRY_BASE_URL)
       IMAGE_TAG="$IMAGE_REPOSITORY_NAME:${{ parameters.dkrImageTag }}"
       docker buildx create --use --name multiarch
-      docker buildx build --push \
-        --force-rm \
-        --platform=linux/arm64,linux/amd64 \
+      docker buildx build --push --force-rm --file $DOCKERFILE \
         --tag $IMAGE_REGISTRY_BASE_URL/$IMAGE_TAG \
         --build-arg IMAGE_REGISTRY_BASE_URL=$IMAGE_REGISTRY_BASE_URL \
-        --file $DOCKERFILE \
+        --platform=linux/arm64,linux/amd64 \
 
   - template: ./post-build.yml
     parameters:
       projectName: ${{ parameters.projectName }}
       artifactName: ${{ parameters.artifactName }}
-      artifactDir: ${{ parameters.artifactDir }}
+      artifactPath: ${{ parameters.artifactPath }}

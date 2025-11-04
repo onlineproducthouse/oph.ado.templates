@@ -12,4 +12,4 @@ steps:
     patterns: "**/*"
 
   - displayName: deploy cloud - ${{ parameters.projectName }}
-    script: terraform -chdir=./module apply ${{ parameters.artifactName }} -auto-approve
+    script: terraform -chdir=./module apply tfplan -auto-approve

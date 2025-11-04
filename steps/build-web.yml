@@ -20,7 +20,7 @@ parameters:
   - name: artifactName
     type: string
 
-  - name: artifactDir
+  - name: artifactPath
     type: string
 
 steps:
@@ -45,4 +45,4 @@ steps:
     parameters:
       projectName: ${{ parameters.projectName }}
       artifactName: ${{ parameters.artifactName }}
-      artifactDir: ${{ parameters.artifactDir }}
+      artifactPath: ${{ parameters.artifactPath }}

@@ -5,10 +5,10 @@ parameters:
   - name: artifactName
     type: string
 
-  - name: artifactDir
+  - name: artifactPath
     type: string
 
 steps:
-  - publish: $(Build.SourcesDirectory)/${{ parameters.artifactDir }}
+  - publish: $(Build.SourcesDirectory)/${{ parameters.artifactPath }}
     displayName: publish artifact - ${{ parameters.projectName }} - ${{ parameters.artifactName }}
     artifact: ${{ parameters.artifactName }}

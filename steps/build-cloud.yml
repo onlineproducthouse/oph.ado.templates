@@ -6,7 +6,7 @@ parameters:
     type: string
     default: tfplan
 
-  - name: artifactDir
+  - name: artifactPath
     type: string
 
 steps:
@@ -14,10 +14,10 @@ steps:
     script: |
       terraform -chdir=./module init
       terraform -chdir=./module validate
-      terraform -chdir=./module plan -input=false -out=${{ parameters.artifactName }}
+      terraform -chdir=./module plan -input=false -out=tfplan
 
   - template: ./post-build.yml
     parameters:
       projectName: ${{ parameters.projectName }}
       artifactName: ${{ parameters.artifactName }}
-      artifactDir: ${{ parameters.artifactDir }}
+      artifactPath: ${{ parameters.artifactPath }}
