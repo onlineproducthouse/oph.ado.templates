@@ -1,0 +1,41 @@
+parameters:
+  - name: testType # required, must be one of: unit, integration
+    type: string
+    default: unit
+    values:
+      - unit
+      - integration
+
+  - name: awsRegion
+    type: string
+    default: ""
+
+  - name: awsSSMParamPath
+    type: string
+    default: ""
+
+  - name: loadEnvVarScriptUrl
+    type: string
+    default: ""
+
+  - name: script
+    type: string
+    default: echo 'Tests not implemented.'
+
+variables:
+  - name: loadEnvVarScriptPath
+    value: ci/env-script.sh
+
+jobs:
+  - job: test
+    displayName: ${{ parameters.testType }} test
+    steps:
+      - ${{ if eq(parameters.testType, 'integration') }}:
+          - template: ../steps/load-env-vars.yml
+            parameters:
+              awsRegion: ${{ parameters.awsRegion }}
+              awsSSMParamPath: ${{ parameters.awsSSMParamPath }}
+              loadEnvVarScriptUrl: ${{ parameters.loadEnvVarScriptUrl }}
+              loadEnvVarScriptPath: $(loadEnvVarScriptPath)
+
+      - script: ${{ parameters.script }}
