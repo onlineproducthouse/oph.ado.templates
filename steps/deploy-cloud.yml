@@ -1,15 +1,3 @@
-parameters:
-  - name: projectName
-    type: string
-
-  - name: artifactName
-    type: string
-
 steps:
-  - download: current
-    displayName: download artifact - ${{ parameters.projectName }} - ${{ parameters.artifactName }}
-    artifact: ${{ parameters.artifactName }}
-    patterns: "**/*"
-
-  - displayName: deploy cloud - ${{ parameters.projectName }}
-    script: terraform -chdir=./module apply tfplan -auto-approve
+  - script: |
+      terraform -chdir=./module apply tfplan -auto-approve

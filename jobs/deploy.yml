@@ -1,0 +1,115 @@
+parameters:
+  - name: environmentName
+    type: string
+  - name: projectType # required, must be one of: cloud, container, web
+    type: string
+    values:
+      - cloud
+      - container-app
+      - container-db
+      - web
+
+  - name: artifactName # optional, leave blank if you do not need artifacts
+    type: string
+    default: ""
+
+  - name: awsRegion
+    type: string
+    default: ""
+  - name: awsSSMParamPath # semi-colon separated list, e.g. "path1;path2;..."
+    type: string
+    default: ""
+  - name: loadEnvVarScriptUrl
+    type: string
+    default: ""
+
+  - name: dkrECRUrl # required, if `projectType` = 'container'
+    type: string
+    default: ""
+  - name: dkrRegistryName # required, if `projectType` = 'container'
+    type: string
+    default: ""
+  - name: dkrImageTag # required, if `projectType` = 'container'
+    type: string
+    default: latest
+
+  - name: hostBucket
+    type: string
+    default: ""
+  - name: cdnId
+    type: string
+    default: ""
+  - name: dist
+    type: string
+    default: ""
+
+  - name: ecsTaskDefFamily
+    type: string
+  - name: ecsRoleArn
+    type: string
+  - name: ecsCpu
+    type: string
+  - name: ecsMemory
+    type: string
+  - name: ecsClusterName
+    type: string
+  - name: ecsSvcName
+    type: string
+  - name: port
+    type: number
+    default: 0
+  - name: envFileStorePath
+    type: string
+
+variables:
+  - name: loadEnvVarScriptPath
+    value: ci/env-script.sh
+
+jobs:
+  - job: deploy
+    displayName: deploy ${{ parameters.projectType }} to ${{ parameters.environmentName }}
+    steps:
+      - ${{ if ne(parameters.artifactName, '') }}:
+          - download: current
+            displayName: download artifact - ${{ parameters.artifactName }}
+            artifact: ${{ parameters.artifactName }}
+            patterns: "**/*"
+
+      - ${{ if startsWith(parameters.projectType, 'container') }}:
+          - template: ../steps/load-env-vars.yml
+            parameters:
+              awsRegion: ${{ parameters.awsRegion }}
+              awsSSMParamPath: ${{ parameters.awsSSMParamPath }}
+              loadEnvVarScriptUrl: ${{ parameters.loadEnvVarScriptUrl }}
+              loadEnvVarScriptPath: $(loadEnvVarScriptPath)
+
+      - ${{ if eq(parameters.projectType, 'cloud') }}:
+          - template: ../steps/deploy-cloud.yml
+
+      - ${{ elseif eq(parameters.projectType, 'container-db') }}:
+          - template: ../steps/deploy-container-db.yml
+            parameters:
+              dkrECRUrl: ${{ parameters.dkrECRUrl }}
+              dkrTag: ${{ parameters.dkrECRUrl }}/${{ parameters.dkrRegistryName }}:${{ parameters.dkrImageTag }}
+
+      - ${{ elseif eq(parameters.projectType, 'web') }}:
+          - template: ../steps/deploy-web.yml
+            parameters:
+              hostBucket: ${{ parameters.hostBucket }}
+              cdnId: ${{ parameters.cdnId }}
+              dist: ${{ parameters.dist }}
+
+      - ${{ if eq(parameters.projectType, 'container-app') }}:
+          - template: ../steps/deploy-container-app.yml
+            parameters:
+              awsRegion: ${{ parameters.awsRegion }}
+              dkrECRUrl: ${{ parameters.dkrECRUrl }}
+              dkrTag: ${{ parameters.dkrECRUrl }}/${{ parameters.dkrRegistryName }}:${{ parameters.dkrImageTag }}
+              ecsTaskDefFamily: ${{ parameters.ecsTaskDefFamily }}
+              ecsRoleArn: ${{ parameters.ecsRoleArn }}
+              ecsCpu: ${{ parameters.ecsCpu }}
+              ecsMemory: ${{ parameters.ecsMemory }}
+              ecsClusterName: ${{ parameters.ecsClusterName }}
+              ecsSvcName: ${{ parameters.ecsSvcName }}
+              port: ${{ parameters.port }}
+              envFileStorePath: ${{ parameters.envFileStorePath }}

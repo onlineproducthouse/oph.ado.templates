@@ -1,38 +1,13 @@
 parameters:
-  - name: environmentName
+  - name: dkrECRUrl
     type: string
 
-  - name: projectName
-    type: string
-
-  - name: awsRegion
-    type: string
-
-  # semi-colon separated list, e.g. "path1;path2;..."
-  - name: awsSSMParamPath
-    type: string
-
-  - name: ciFolder
-    type: string
-    default: ci
-
-  - name: loadEnvVarScriptUrl
-    type: string
-
-  - name: envFileStorePath
+  - name: dkrTag
     type: string
 
 steps:
-  - template: ./load-env-vars.yml
-    parameters:
-      projectName: ${{ parameters.projectName }}
-      awsRegion: ${{ parameters.awsRegion }}
-      awsSSMParamPath: ${{ parameters.awsSSMParamPath }}
-      ciFolder: ${{ parameters.ciFolder }}
-      loadEnvVarScriptUrl: ${{ parameters.loadEnvVarScriptUrl }}
+  - script: |
+      echo $(aws ecr get-login-password | docker login --username AWS --password-stdin ${{ parameters.dkrECRUrl }})
 
-  - displayName: deploy container db - ${{ parameters.projectName }} - ${{ parameters.environmentName }}
-    script: |
-      echo $(aws ecr get-login-password | docker login --username AWS --password-stdin $IMAGE_REGISTRY_BASE_URL)
-      docker pull $DKR_IMAGE && \
-      docker run --env-file .env $DKR_IMAGE
+      docker pull ${{ parameters.dkrTag }} \
+        && docker run --env-file .env ${{ parameters.dkrTag }}

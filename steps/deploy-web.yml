@@ -1,45 +1,24 @@
 parameters:
-  - name: projectName
-    type: string
-
-  - name: awsRegion
-    type: string
-    default: ci
-
-  # semi-colon separated list, e.g. "path1;path2;..."
-  - name: awsSSMParamPath
-    type: string
-
   - name: ciFolder
     type: string
     default: ci
 
-  - name: loadEnvVarScriptUrl
-    type: string
-
-  - name: artifactName
+  - name: hostBucket
     type: string
 
   - name: cdnId
     type: string
 
+  - name: dist
+    type: string
+
+variables:
+  - name: invalidateBatchPath
+    value: $(pwd)/${{ parameters.ciFolder }}/inv-batch.json
+
 steps:
-  - download: current
-    displayName: download artifact - ${{ parameters.projectName }} - ${{ parameters.artifactName }}
-    artifact: ${{ parameters.artifactName }}
-    patterns: "**/*"
-
-  - template: ./load-env-vars.yml
-    parameters:
-      projectName: ${{ parameters.projectName }}
-      awsRegion: ${{ parameters.awsRegion }}
-      awsSSMParamPath: ${{ parameters.awsSSMParamPath }}
-      ciFolder: ${{ parameters.ciFolder }}
-      loadEnvVarScriptUrl: ${{ parameters.loadEnvVarScriptUrl }}
-
-  - displayName: deploy web - ${{ parameters.projectName }}
-    script: |
-      aws s3 sync ${{ parameters.artifactName }} "s3://$S3_HOST_BUCKET_URL"
+  - script: |
+      aws s3 sync ${{ parameters.dist }} "s3://${{ parameters.hostBucket }}"
 
       echo '{
         "Paths": {
@@ -47,8 +26,8 @@ steps:
           "Items": ["/*"]
         },
         "CallerReference": "'$(Build.BuildNumber)'"
-      }' >"$(pwd)/${{ parameters.ciFolder }}/inv-batch.json"
+      }' >"$(invalidateBatchPath)"
 
       echo $(aws cloudfront create-invalidation \
         --distribution-id ${{ parameters.cdnId }} \
-        --invalidation-batch "file://$(pwd)/${{ parameters.ciFolder }}/inv-batch.json")
+        --invalidation-batch "file://$(invalidateBatchPath)")
