@@ -9,6 +9,18 @@ parameters:
       - container
       - web
 
+  - name: awsRegion # required, if `projectType` = 'web'
+    type: string
+    default: ""
+
+  - name: awsSSMParamPath # required, if `projectType` = 'web'. semi-colon separated list, e.g. "path1;path2;..."
+    type: string
+    default: ""
+
+  - name: loadEnvVarScriptUrl # required, if `projectType` = 'web'
+    type: string
+    default: ""
+
   - name: artifactName # optional, leave blank if you do not need artifacts
     type: string
     default: ""
@@ -47,9 +59,9 @@ jobs:
       - ${{ elseif eq(parameters.projectType, 'container') }}:
           - template: ../steps/build-container.yml
             parameters:
+              dkrFile: ${{ parameters.dkrFile }}
               dkrECRUrl: ${{ parameters.dkrECRUrl }}
               dkrTag: ${{ parameters.dkrECRUrl }}/${{ parameters.dkrRegistryName }}:${{ parameters.dkrImageTag }}
-              dkrFile: ${{ parameters.dkrFile }}
 
       - ${{ elseif eq(parameters.projectType, 'web') }}:
           - template: ../steps/load-env-vars.yml

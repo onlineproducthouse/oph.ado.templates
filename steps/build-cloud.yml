@@ -1,9 +1,5 @@
 steps:
-  - displayName: terraform init
-    script: terraform -chdir=./module init
-
-  - displayName: terraform validate
-    script: terraform -chdir=./module validate
-
-  - displayName: terraform plan
-    script: terraform -chdir=./module plan -input=false -out=tfplan
+  - script: |
+      terraform -chdir=./module init
+      terraform -chdir=./module validate
+      terraform -chdir=./module plan -input=false -out=tfplan

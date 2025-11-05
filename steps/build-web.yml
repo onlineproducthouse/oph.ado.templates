@@ -9,7 +9,6 @@ steps:
       versionSource: spec
       versionSpec: 22.13.1
 
-  - displayName: npm run build
-    script: |
+  - script: |
       source $(echo "${{ parameters.loadEnvVarScriptPath }}") \
         && npm run build

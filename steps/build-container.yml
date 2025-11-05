@@ -1,17 +1,16 @@
 parameters:
+  - name: dkrFile
+    type: string
+    default: Dockerfile
+
   - name: dkrECRUrl
     type: string
 
   - name: dkrTag
     type: string
 
-  - name: dkrFile
-    type: string
-    default: Dockerfile
-
 steps:
-  - displayName: docker build
-    script: |
+  - script: |
       echo $(aws ecr get-login-password | docker login --username AWS --password-stdin ${{ parameters.dkrECRUrl }})
 
       docker buildx create --use --name multiarch

@@ -1,13 +1,15 @@
 parameters:
   - name: awsRegion
     type: string
-    default: ci
+    default: ""
 
   - name: awsSSMParamPath # semi-colon separated list, e.g. "path1;path2;..."
     type: string
+    default: ""
 
   - name: loadEnvVarScriptUrl
     type: string
+    default: ""
 
   - name: loadEnvVarScriptPath
     type: string
