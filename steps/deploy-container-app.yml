@@ -35,70 +35,74 @@ variables:
   - name: ecsFolder
     value: ${{ parameters.ciFolder }}/ecs
   - name: ecsTaskDefTemplate
-    value: $(ecsFolder)/task.json
+    value: ${{ variables.ecsFolder }}/task.json
   - name: ecsTask
-    value: $(ecsFolder)/task-ecs.json
+    value: ${{ variables.ecsFolder }}/task-ecs.json
 
 steps:
-  - script: |
-      touch $(ecsTaskDefTemplate)
-      touch $(ecsTask)
+  - name: DeployContainerApp
+    script: |
+      touch ${{ parameters.ecsTaskDefTemplate }}
+      touch ${{ parameters.ecsTask }}
 
-      LOCAL_PORT_MAPPING='[]'
+      aws ecr get-login-password | docker login --username AWS --password-stdin ${{ parameters.dkrECRUrl }}
+
+      ECS_PORT_MAPPING='[]'
       if [[ ${{ parameters.port }} != "0" ]]; then
-        LOCAL_PORT_MAPPING='[
+        ECS_PORT_MAPPING='[
           {
-            "name": "'${{ parameters.ecsTaskDefFamily }}'",
+            "name": "${{ parameters.ecsTaskDefFamily }}",
             "protocol": "tcp",
-            "containerPort": '${{ parameters.port }}',
-            "hostPort": '${{ parameters.port }}'
+            "containerPort": ${{ parameters.port }},
+            "hostPort": ${{ parameters.port }}
           }
         ]'
       fi
 
-      echo $(aws ecr get-login-password | docker login --username AWS --password-stdin ${{ parameters.dkrECRUrl }})
-
       echo '{
-        "family": "'${{ parameters.ecsTaskDefFamily }}'",
-        "taskRoleArn": "'${{ parameters.ecsRoleArn }}'",
-        "executionRoleArn": "'${{ parameters.ecsRoleArn }}'",
+        "family": "${{ parameters.ecsTaskDefFamily }}",
+        "taskRoleArn": "${{ parameters.ecsRoleArn }}",
+        "executionRoleArn": "${{ parameters.ecsRoleArn }}",
         "networkMode": "host",
         "requiresCompatibilities": ["EC2"],
-        "cpu": "'${{ parameters.ecsCpu }}'",
-        "memory": "'${{ parameters.ecsMemory }}'",
+        "cpu": "${{ parameters.ecsCpu }}",
+        "memory": "${{ parameters.ecsMemory }}",
         "containerDefinitions": [
           {
-            "name": "'${{ parameters.ecsTaskDefFamily }}'",
+            "name": "${{ parameters.ecsTaskDefFamily }}",
             "essential": true,
-            "image": "'${{ parameters.dkrTag }}'",
-            "cpu": '${{ parameters.ecsCpu }}',
-            "memory": '${{ parameters.ecsMemory }}',
-            "portMappings": '${LOCAL_PORT_MAPPING}',
+            "image": "${{ parameters.dkrTag }}",
+            "cpu": ${{ parameters.ecsCpu }},
+            "memory": ${{ parameters.ecsMemory }},
+            "portMappings": ${ECS_PORT_MAPPING},
             "logConfiguration": {
               "logDriver": "awslogs",
               "options": {
-                "awslogs-group": "'${{ parameters.ecsTaskDefFamily }}'",
-                "awslogs-region": "'${{ parameters.awsRegion }}'",
-                "awslogs-stream-prefix": "'${{ parameters.ecsTaskDefFamily }}'"
+                "awslogs-group": "${{ parameters.ecsTaskDefFamily }}",
+                "awslogs-region": "${{ parameters.awsRegion }}",
+                "awslogs-stream-prefix": "${{ parameters.ecsTaskDefFamily }}"
               }
             },
             "environmentFiles": [
               {
-                "value": "arn:aws:s3:::'${{ parameters.envFileStorePath }}'/'.env'",
+                "value": "arn:aws:s3:::${{ parameters.envFileStorePath }}",
                 "type": "s3"
               }
             ]
           }
         ]
-      }' >$(ecsTaskDefTemplate)
+      }' >${{ parameters.ecsTaskDefTemplate }}
 
-      echo $(cat $(ecsTaskDefTemplate)) >$(ecsTask)
+      echo $(cat ${{ parameters.ecsTaskDefTemplate }}) >${{ parameters.ecsTask }}
 
-      aws ecs register-task-definition --family ${{ parameters.ecsTaskDefFamily }} --cli-input-json file://$(ecsTask)
+      aws ecs register-task-definition \
+        --family ${{ parameters.ecsTaskDefFamily }} \
+        --cli-input-json file://${{ parameters.ecsTask }}
 
-      TASK_REVISION=$(aws ecs describe-task-definition --task-definition ${{ parameters.ecsTaskDefFamily }} | jq '.taskDefinition.revision')
+      TASK_REVISION=aws ecs describe-task-definition --task-definition ${{ parameters.ecsTaskDefFamily }} | jq '.taskDefinition.revision'
 
-      aws ecs update-service --force-new-deployment \
+      aws ecs update-service \
+        --force-new-deployment \
         --cluster ${{ parameters.ecsClusterName }} \
         --service ${{ parameters.ecsSvcName }} \
-        --task-definition ${{ parameters.ecsTaskDefFamily }}:${TASK_REVISION}
+        --task-definition ${{ parameters.ecsTaskDefFamily }}:$TASK_REVISION

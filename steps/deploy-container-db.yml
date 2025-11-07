@@ -6,8 +6,8 @@ parameters:
     type: string
 
 steps:
-  - script: |
-      echo $(aws ecr get-login-password | docker login --username AWS --password-stdin ${{ parameters.dkrECRUrl }})
-
+  - name: DeployContainerDB
+    script: |
+      aws ecr get-login-password | docker login --username AWS --password-stdin ${{ parameters.dkrECRUrl }}
       docker pull ${{ parameters.dkrTag }} \
-        && docker run --env-file .env ${{ parameters.dkrTag }}
+      docker run --env-file .env ${{ parameters.dkrTag }}

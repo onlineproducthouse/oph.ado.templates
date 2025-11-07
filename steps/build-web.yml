@@ -1,14 +1,16 @@
 parameters:
-  - name: loadEnvVarScriptPath
+  - name: envFilePath # Default = './.env'
     type: string
+    default: ./.env
 
 steps:
-  - displayName: install nodejs
+  - name: InstallNodeJS
     task: NodeTool@0
     inputs:
       versionSource: spec
       versionSpec: 22.13.1
 
-  - script: |
-      source $(echo "${{ parameters.loadEnvVarScriptPath }}") \
+  - name: BuildWeb
+    script: |
+      source $(echo "${{ parameters.envFilePath }}") \
         && npm run build

@@ -1,81 +1,113 @@
 parameters:
-  - name: projectName
-    type: string
-
-  - name: projectType # required, must be one of: cloud, container, web
+  ###################################################################
+  #                                                                 #
+  #   shared parameters                                             #
+  #                                                                 #
+  ###################################################################
+  - name: projectType # required. Must be one of: cloud, container, web
     type: string
     values:
       - cloud
       - container
       - web
 
-  - name: awsRegion # required, if `projectType` = 'web'
+  ###################################################################
+  #                                                                 #
+  #   get-ssm-params.yml parameters                                 #
+  #                                                                 #
+  ###################################################################
+  - name: awsSSMParamPathList # optional if "projectType" = "web". Default = []. List of strings. AWS SSM Parameter path to pull variables from. If empty, step is disabled.
+    type: object
+    default: []
+
+  - name: awsRegion # required if "projectType" = "web" and intending to retrieve secrets from AWS SSM Parameter Store. Default = empty string.
     type: string
     default: ""
 
-  - name: awsSSMParamPath # required, if `projectType` = 'web'. semi-colon separated list, e.g. "path1;path2;..."
+  - name: dotEnvFilePath # optional if "projectType" = "web". Default = '.'. Location to store env file on the, e.g. ./path/to/env/file
+    type: string
+    default: "."
+
+  - name: dotEnvFileName # optional if "projectType" = "web". Default = '.env'. Name for env, e.g. .env
+    type: string
+    default: ".env"
+
+  - name: dotEnvFileStoreUrl # required if "projectType" = "web". Default = empty string. AWS S3 bucket URL where env the file will be uploaded to
     type: string
     default: ""
 
-  - name: loadEnvVarScriptUrl # required, if `projectType` = 'web'
+  ###################################################################
+  #                                                                 #
+  #   build-cloud.yml parameters                                    #
+  #                                                                 #
+  ###################################################################
+  # optional if "projectType" = "cloud".
+  # Leave empty if root directory, e.g. '.'
+  # Terraform execution directory.
+  # Name of directory to pass to `-chdir`, e.g. $(Build.SourcesDirectory)/module
+  - name: tfChildDir
     type: string
-    default: ""
+    default: .
 
+  ###################################################################
+  #                                                                 #
+  #   build-container.yml parameters                                #
+  #                                                                 #
+  ###################################################################
+  - name: dkrFile # optional if "projectType" = "container". Default = Dockerfile
+    type: string
+    default: Dockerfile
+
+  - name: dkrECRUrl # required if "projectType" = "container".
+    type: string
+
+  - name: dkrTag # optional if "projectType" = "container". Default = latest
+    type: string
+    default: latest
+
+  ###################################################################
+  #                                                                 #
+  #   post-build.yml parameters                                     #
+  #                                                                 #
+  ###################################################################
   - name: artifactName # optional, leave blank if you do not need artifacts
     type: string
     default: ""
 
-  - name: artifactPath
+  - name: artifactPath # Default = '.' e.g. $(Build.SourcesDirectory)/dist
     type: string
-    default: ""
-
-  - name: dkrECRUrl # required, if `projectType` = 'container'
-    type: string
-    default: ""
-
-  - name: dkrRegistryName # required, if `projectType` = 'container'
-    type: string
-    default: ""
-
-  - name: dkrImageTag # required, if `projectType` = 'container'
-    type: string
-    default: latest
-
-  - name: dkrFile # required, if `projectType` = 'container'
-    type: string
-    default: Dockerfile
-
-variables:
-  - name: loadEnvVarScriptPath
-    value: ci/env-script.sh
+    default: "."
 
 jobs:
   - job: build
-    displayName: build ${{ parameters.projectType }} - ${{ parameters.projectName }}
+    displayName: build ${{ parameters.projectType }}
     steps:
       - ${{ if eq(parameters.projectType, 'cloud') }}:
           - template: ../steps/build-cloud.yml
+            parameters:
+              tfChildDir: ${{ parameters.tfChildDir }}
 
       - ${{ elseif eq(parameters.projectType, 'container') }}:
           - template: ../steps/build-container.yml
             parameters:
               dkrFile: ${{ parameters.dkrFile }}
-              dkrECRUrl: ${{ parameters.dkrECRUrl }}
-              dkrTag: ${{ parameters.dkrECRUrl }}/${{ parameters.dkrRegistryName }}:${{ parameters.dkrImageTag }}
+              dkrECRUrl: ${{ parameters.dkrECRUrl }} # required
+              dkrTag: ${{ parameters.dkrTag }} # ${{ parameters.dkrECRUrl }}/${{ parameters.dkrRegistryName }}:${{ parameters.dkrImageTag }}
 
       - ${{ elseif eq(parameters.projectType, 'web') }}:
-          - template: ../steps/load-env-vars.yml
+          - template: ../steps/get-ssm-params.yml
             parameters:
-              awsRegion: ${{ parameters.awsRegion }}
-              awsSSMParamPath: ${{ parameters.awsSSMParamPath }}
-              loadEnvVarScriptUrl: ${{ parameters.loadEnvVarScriptUrl }}
-              loadEnvVarScriptPath: $(loadEnvVarScriptPath)
+              awsRegion: ${{ parameters.awsRegion }} # required if awsSSMParamPathList > 0
+              awsSSMParamPathList: ${{ parameters.awsSSMParamPathList }}
+              dotEnvFilePath: ${{ parameters.dotEnvFilePath }}
+              dotEnvFileName: ${{ parameters.dotEnvFileName }}
+              dotEnvFileStoreUrl: ${{ parameters.dotEnvFileStoreUrl }} # required
 
           - template: ../steps/build-web.yml
             parameters:
-              loadEnvVarScriptPath: $(loadEnvVarScriptPath)
+              envFilePath: ${{ parameters.dotEnvFilePath }}/${{ parameters.dotEnvFileName }}
 
       - template: ../steps/post-build.yml
         parameters:
           artifactName: ${{ parameters.artifactName }}
-          artifactPath: $(Build.SourcesDirectory)/${{ parameters.artifactPath }}
+          artifactPath: ${{ parameters.artifactPath }}

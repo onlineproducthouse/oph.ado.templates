@@ -1,5 +1,14 @@
+parameters:
+  # Leave empty if root, e.g. '.'
+  # Terraform execution directory.
+  # Name of directory to pass to `-chdir`, e.g. $(Build.SourcesDirectory)/module
+  - name: tfChildDir
+    type: string
+    default: .
+
 steps:
-  - script: |
-      terraform -chdir=./module init
-      terraform -chdir=./module validate
-      terraform -chdir=./module plan -input=false -out=tfplan
+  - name: BuildCloud
+    script: |
+      terraform -chdir=${{ parameters.tfChildDir }} init
+      terraform -chdir=${{ parameters.tfChildDir }} validate
+      terraform -chdir=${{ parameters.tfChildDir }} plan -input=false -out=tfplan

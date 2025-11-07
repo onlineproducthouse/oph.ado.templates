@@ -10,11 +10,10 @@ parameters:
     type: string
 
 steps:
-  - script: |
-      echo $(aws ecr get-login-password | docker login --username AWS --password-stdin ${{ parameters.dkrECRUrl }})
-
+  - name: BuildContainer
+    script: |
+      aws ecr get-login-password | docker login --username AWS --password-stdin ${{ parameters.dkrECRUrl }}
       docker buildx create --use --name multiarch
-
       docker buildx build --push --force-rm --file ${{ parameters.dkrFile }} \
         --build-arg IMAGE_REGISTRY_BASE_URL=${{ parameters.dkrECRUrl }} \
         --tag ${{ parameters.dkrTag }} \
