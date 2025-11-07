@@ -1,0 +1,57 @@
+parameters:
+  - name: awsSSMParamPathList # Default = []. List of strings. AWS SSM Parameter path to pull variables from
+    type: object
+    default: []
+
+  - name: awsRegion # Default = empty string.
+    type: string
+    default: ""
+
+  - name: dotEnvFilePath # Default = '.'. Location to store env file on the, e.g. ./path/to/env/file
+    type: string
+    default: "."
+
+  - name: dotEnvFileName # Default = '.env'. Name for env, e.g. .env
+    type: string
+    default: ".env"
+
+  - name: dotEnvFileStoreUrl # Default = empty string. AWS S3 bucket URL where env the file will be uploaded to
+    type: string
+    default: ""
+
+steps:
+  - name: GetSSMParams
+
+    ${{ if length(parameters.awsSSMParamPathList, 0) }}:
+      enable: false
+    ${{ else }}:
+      enable: true
+
+    script: |
+      IFS=';'
+      for SSM_PATH in ${{ join(';', parameters.awsSSMParamPathList) }}; do
+        echo "Loading environment variables at path: $SSM_PATH"
+
+        SSM_GET_RESP=aws ssm get-parameters-by-path --path "$SSM_PATH" --region "${{ parameters.awsRegion }}" --recursive --with-decryption --output "json"
+        AWS_SSM_PARAMS_RESULT=$SSM_GET_RESP | jq '.Parameters'
+
+        AWS_SSM_PARAMS_LENGTH=$AWS_SSM_PARAMS_RESULT | jq '. | length'
+        AWS_SSM_PARAMS_COUNT=$AWS_SSM_PARAMS_LENGTH * 1
+
+        for ((PARAM_INDEX = 0; PARAM_INDEX < $AWS_SSM_PARAMS_COUNT; PARAM_INDEX++)); do
+          echo "Current PARAM_INDEX: $PARAM_INDEX"
+
+          PARAM_NAME=$AWS_SSM_PARAMS_RESULT | jq ".[$PARAM_INDEX].Name"
+          PARAM_VALUE=$AWS_SSM_PARAMS_RESULT | jq ".[$PARAM_INDEX].Value"
+
+          KEY=sed -e 's/^"//' -e 's/"$//' -e 's|'"$SSM_PATH"'/["]*||' <<<echo $PARAM_NAME
+          VALUE=sed -e 's/^"//' -e 's/"$//' <<<echo $PARAM_VALUE
+
+          echo "$KEY"="$VALUE" >>${{ parameters.dotEnvFilePath }}/${{ parameters.dotEnvFileName }}
+          echo "##vso[task.setvariable variable=$KEY;isOutput=true;issecret=true]$VALUE"
+        done
+
+        echo "Pulled $AWS_SSM_PARAMS_COUNT parameters from path: $SSM_PATH"
+      done
+
+      aws s3 cp ${{ parameters.dotEnvFilePath }}/${{ parameters.dotEnvFileName }} ${{ parameters.dotEnvFileStoreUrl }}
