@@ -22,10 +22,10 @@ parameters:
 steps:
   - name: GetSSMParams
 
-    ${{ if length(parameters.awsSSMParamPathList, 0) }}:
-      enable: false
-    ${{ else }}:
+    ${{ if gt(length(parameters.awsSSMParamPathList), 0) }}:
       enable: true
+    ${{ else }}:
+      enable: false
 
     script: |
       IFS=';'
