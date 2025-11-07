@@ -1,7 +1,13 @@
 parameters:
+  ###################################################################
+  #                                                                 #
+  #   global parameters                                             #
+  #                                                                 #
+  ###################################################################
   - name: environmentName
     type: string
-  - name: projectType # required, must be one of: cloud, container, web
+
+  - name: projectType # required. Must be one of: cloud, container, web
     type: string
     values:
       - cloud
@@ -13,57 +19,101 @@ parameters:
     type: string
     default: ""
 
-  - name: awsRegion
-    type: string
-    default: ""
-  - name: awsSSMParamPath # semi-colon separated list, e.g. "path1;path2;..."
-    type: string
-    default: ""
-  - name: loadEnvVarScriptUrl
+  ###################################################################
+  #                                                                 #
+  #   get-ssm-params.yml parameters                                 #
+  #                                                                 #
+  ###################################################################
+  - name: awsSSMParamPathList # Default = []. List of strings. AWS SSM Parameter path to pull variables from. If empty, step is disabled.
+    type: object
+    default: []
+
+  - name: awsRegion # required if intending to retrieve secrets from AWS SSM Parameter Store. Default = empty string.
     type: string
     default: ""
 
-  - name: dkrECRUrl # required, if `projectType` = 'container'
+  - name: dotEnvFilePath # Default = '.'. Location to store env file on the, e.g. ./path/to/env/file
+    type: string
+    default: "."
+
+  - name: dotEnvFileName # Default = '.env'. Name for env, e.g. .env
+    type: string
+    default: ".env"
+
+  - name: dotEnvFileStoreUrl # Default = empty string. AWS S3 bucket URL where env the file will be uploaded to
     type: string
     default: ""
-  - name: dkrRegistryName # required, if `projectType` = 'container'
+
+  ###################################################################
+  #                                                                 #
+  #   deploy-cloud.yml parameters                                   #
+  #                                                                 #
+  ###################################################################
+  # optional if "projectType" = "cloud".
+  # Leave empty if root directory, e.g. '.'
+  # Terraform execution directory.
+  # Name of directory to pass to `-chdir`, e.g. $(Build.SourcesDirectory)/module
+  - name: tfChildDir
+    type: string
+    default: .
+
+  ###################################################################
+  #                                                                 #
+  #   deploy-container-[app|db].yml parameters                      #
+  #                                                                 #
+  ###################################################################
+  - name: dkrECRUrl # required if "projectType" = "container-app" OR "container-db".
     type: string
     default: ""
-  - name: dkrImageTag # required, if `projectType` = 'container'
+
+  - name: dkrTag # optional if "projectType" = "container-app" OR "container-db". Default = latest
     type: string
     default: latest
 
-  - name: hostBucket
+  ###################################################################
+  #                                                                 #
+  #   deploy-container-app.yml parameters.                          #
+  #                                                                 #
+  ###################################################################
+  - name: ecsTaskDefFamily # required if "projectType" = "container-app"
     type: string
     default: ""
-  - name: cdnId
+  - name: ecsRoleArn # required if ecsTaskDefFamily is not empty string.
     type: string
     default: ""
-  - name: dist
+  - name: ecsCpu # required if ecsTaskDefFamily is not empty string.
+    type: string
+    default: 0
+  - name: ecsMemory # required if ecsTaskDefFamily is not empty string.
+    type: string
+    default: 0
+  - name: ecsClusterName # required if ecsTaskDefFamily is not empty string.
     type: string
     default: ""
+  - name: ecsSvcName # required if ecsTaskDefFamily is not empty string.
+    type: string
+    default: ""
+  - name: envFileStorePath # required if ecsTaskDefFamily is not empty string.
+    type: string
 
-  - name: ecsTaskDefFamily
-    type: string
-  - name: ecsRoleArn
-    type: string
-  - name: ecsCpu
-    type: string
-  - name: ecsMemory
-    type: string
-  - name: ecsClusterName
-    type: string
-  - name: ecsSvcName
-    type: string
   - name: port
     type: number
     default: 0
-  - name: envFileStorePath
-    type: string
 
-variables:
-  - name: loadEnvVarScriptPath
-    value: ci/env-script.sh
+  ###################################################################
+  #                                                                 #
+  #   deploy-web.yml parameters.                                    #
+  #                                                                 #
+  ###################################################################
+  - name: hostBucket # required if "projectType" = "web". AWS S3 Bucket name
+    type: string
+    default: ""
+  - name: cdnId # required if "projectType" = "web"
+    type: string
+    default: ""
+  - name: dist # required if "projectType" = "web". The folder to upload to AWS S3
+    type: string
+    default: ""
 
 jobs:
   - deployment: deploy
@@ -79,40 +129,64 @@ jobs:
                   patterns: "**/*"
 
             - ${{ if startsWith(parameters.projectType, 'container') }}:
-                - template: ../steps/load-env-vars.yml
+                - template: ../steps/get-ssm-params.yml
                   parameters:
-                    awsRegion: ${{ parameters.awsRegion }}
-                    awsSSMParamPath: ${{ parameters.awsSSMParamPath }}
-                    loadEnvVarScriptUrl: ${{ parameters.loadEnvVarScriptUrl }}
-                    loadEnvVarScriptPath: $(loadEnvVarScriptPath)
+                    # required - force AZ Pipelines validator to throw an error
+                    ${{ if and(ne(parameters.awsRegion, ''), gt(length(parameters.awsSSMParamPathList), 0)) }}:
+                      awsRegion: ${{ parameters.awsRegion }}
+                    ${{ if ne(parameters.dotEnvFileStoreUrl, '') }}:
+                      dotEnvFileStoreUrl: ${{ parameters.dotEnvFileStoreUrl }}
+
+                    awsSSMParamPathList: ${{ parameters.awsSSMParamPathList }}
+                    dotEnvFilePath: ${{ parameters.dotEnvFilePath }}
+                    dotEnvFileName: ${{ parameters.dotEnvFileName }}
 
             - ${{ if eq(parameters.projectType, 'cloud') }}:
                 - template: ../steps/deploy-cloud.yml
-
-            - ${{ elseif eq(parameters.projectType, 'container-db') }}:
-                - template: ../steps/deploy-container-db.yml
                   parameters:
-                    dkrECRUrl: ${{ parameters.dkrECRUrl }}
-                    dkrTag: ${{ parameters.dkrECRUrl }}/${{ parameters.dkrRegistryName }}:${{ parameters.dkrImageTag }}
-
-            - ${{ elseif eq(parameters.projectType, 'web') }}:
-                - template: ../steps/deploy-web.yml
-                  parameters:
-                    hostBucket: ${{ parameters.hostBucket }}
-                    cdnId: ${{ parameters.cdnId }}
-                    dist: ${{ parameters.dist }}
+                    tfChildDir: ${{ parameters.tfChildDir }}
 
             - ${{ if eq(parameters.projectType, 'container-app') }}:
                 - template: ../steps/deploy-container-app.yml
                   parameters:
-                    awsRegion: ${{ parameters.awsRegion }}
-                    dkrECRUrl: ${{ parameters.dkrECRUrl }}
-                    dkrTag: ${{ parameters.dkrECRUrl }}/${{ parameters.dkrRegistryName }}:${{ parameters.dkrImageTag }}
-                    ecsTaskDefFamily: ${{ parameters.ecsTaskDefFamily }}
-                    ecsRoleArn: ${{ parameters.ecsRoleArn }}
+                    # required - force AZ Pipelines validator to throw an error
+                    ${{ if ne(parameters.awsRegion, '') }}:
+                      awsRegion: ${{ parameters.awsRegion }}
+                    ${{ if ne(parameters.dkrECRUrl, '') }}:
+                      dkrECRUrl: ${{ parameters.dkrECRUrl }}
+                    ${{ if ne(parameters.ecsTaskDefFamily, '') }}:
+                      ecsTaskDefFamily: ${{ parameters.ecsTaskDefFamily }}
+                      ${{ if ne(parameters.ecsRoleArn, '') }}:
+                        ecsRoleArn: ${{ parameters.ecsRoleArn }}
+                      ${{ if ne(parameters.ecsClusterName, '') }}:
+                        ecsClusterName: ${{ parameters.ecsClusterName }}
+                      ${{ if ne(parameters.ecsSvcName, '') }}:
+                        ecsSvcName: ${{ parameters.ecsSvcName }}
+                      ${{ if ne(parameters.envFileStorePath, '') }}:
+                        envFileStorePath: ${{ parameters.envFileStorePath }}
+
+                    dkrTag: ${{ parameters.dkrTag }}
                     ecsCpu: ${{ parameters.ecsCpu }}
                     ecsMemory: ${{ parameters.ecsMemory }}
-                    ecsClusterName: ${{ parameters.ecsClusterName }}
-                    ecsSvcName: ${{ parameters.ecsSvcName }}
                     port: ${{ parameters.port }}
-                    envFileStorePath: ${{ parameters.envFileStorePath }}
+
+            - ${{ elseif eq(parameters.projectType, 'container-db') }}:
+                - template: ../steps/deploy-container-db.yml
+                  parameters:
+                    # required - force AZ Pipelines validator to throw an error
+                    ${{ if ne(parameters.dkrECRUrl, '') }}:
+                      dkrECRUrl: ${{ parameters.dkrECRUrl }}
+                    dkrTag: ${{ parameters.dkrTag }}
+
+            - ${{ elseif eq(parameters.projectType, 'web') }}:
+                - template: ../steps/deploy-web.yml
+                  parameters:
+                    # required - force AZ Pipelines validator to throw an error
+                    ${{ if ne(parameters.hostBucket, '') }}:
+                      hostBucket: ${{ parameters.hostBucket }}
+                    ${{ if ne(parameters.cdnId, '') }}:
+                      cdnId: ${{ parameters.cdnId }}
+                    ${{ if ne(parameters.dist, '') }}:
+                      dist: ${{ parameters.dist }}
+
+                    invalidateBatchPath: $(Build.SourcesDirectory)/ci/inv-batch.json

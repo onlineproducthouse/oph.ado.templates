@@ -1,8 +1,4 @@
 parameters:
-  - name: ciFolder
-    type: string
-    default: ci
-
   - name: awsRegion
     type: string
 
@@ -23,13 +19,12 @@ parameters:
     type: string
   - name: ecsSvcName
     type: string
+  - name: envFileStorePath
+    type: string
 
   - name: port
     type: number
     default: 0
-
-  - name: envFileStorePath
-    type: string
 
 variables:
   - name: ecsFolder

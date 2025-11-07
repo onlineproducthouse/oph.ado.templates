@@ -21,7 +21,7 @@ steps:
           "Quantity": 1,
           "Items": ["/*"]
         },
-        "CallerReference": "'$(Build.BuildNumber)'"
+        "CallerReference": "$(Build.BuildNumber)"
       }' >"${{ parameters.invalidateBatchPath }}"
 
       echo $(aws cloudfront create-invalidation \

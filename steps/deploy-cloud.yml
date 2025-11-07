@@ -1,4 +1,7 @@
 parameters:
+  # Leave empty if root, e.g. '.'
+  # Terraform execution directory.
+  # Name of directory to pass to `-chdir`, e.g. $(Build.SourcesDirectory)/module
   - name: tfChildDir
     type: string
     default: .

@@ -1,4 +1,9 @@
 parameters:
+  ###################################################################
+  #                                                                 #
+  #   global parameters                                             #
+  #                                                                 #
+  ###################################################################
   - name: testType # required, must be one of: unit, integration
     type: string
     default: unit
@@ -6,36 +11,51 @@ parameters:
       - unit
       - integration
 
-  - name: awsRegion
-    type: string
-    default: ""
-
-  - name: awsSSMParamPath
-    type: string
-    default: ""
-
-  - name: loadEnvVarScriptUrl
-    type: string
-    default: ""
-
-  - name: script
+  - name: script # required to run tests
     type: string
     default: echo 'Tests not implemented.'
 
-variables:
-  - name: loadEnvVarScriptPath
-    value: ci/env-script.sh
+  ###################################################################
+  #                                                                 #
+  #   get-ssm-params.yml parameters                                 #
+  #                                                                 #
+  ###################################################################
+  - name: awsSSMParamPathList # optional if "projectType" = "web". Default = []. List of strings. AWS SSM Parameter path to pull variables from. If empty, step is disabled.
+    type: object
+    default: []
+
+  - name: awsRegion # required if "projectType" = "web" and intending to retrieve secrets from AWS SSM Parameter Store. Default = empty string.
+    type: string
+    default: ""
+
+  - name: dotEnvFilePath # optional if "projectType" = "web". Default = '.'. Location to store env file on the, e.g. ./path/to/env/file
+    type: string
+    default: "."
+
+  - name: dotEnvFileName # optional if "projectType" = "web". Default = '.env'. Name for env, e.g. .env
+    type: string
+    default: ".env"
+
+  - name: dotEnvFileStoreUrl # required if "projectType" = "web". Default = empty string. AWS S3 bucket URL where env the file will be uploaded to
+    type: string
+    default: ""
 
 jobs:
   - job: test
     displayName: ${{ parameters.testType }} test
     steps:
       - ${{ if eq(parameters.testType, 'integration') }}:
-          - template: ../steps/load-env-vars.yml
+          - template: ../steps/get-ssm-params.yml
             parameters:
-              awsRegion: ${{ parameters.awsRegion }}
-              awsSSMParamPath: ${{ parameters.awsSSMParamPath }}
-              loadEnvVarScriptUrl: ${{ parameters.loadEnvVarScriptUrl }}
-              loadEnvVarScriptPath: $(loadEnvVarScriptPath)
+              # required - force AZ Pipelines validator to throw an error
+              ${{ if and(ne(parameters.awsRegion, ''), gt(length(parameters.awsSSMParamPathList), 0)) }}:
+                awsRegion: ${{ parameters.awsRegion }}
+              ${{ if ne(parameters.dotEnvFileStoreUrl, '') }}:
+                dotEnvFileStoreUrl: ${{ parameters.dotEnvFileStoreUrl }}
 
-      - script: ${{ parameters.script }}
+              awsSSMParamPathList: ${{ parameters.awsSSMParamPathList }}
+              dotEnvFilePath: ${{ parameters.dotEnvFilePath }}
+              dotEnvFileName: ${{ parameters.dotEnvFileName }}
+
+      - name: Run
+        script: ${{ parameters.script }}

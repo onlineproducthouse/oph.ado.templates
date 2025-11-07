@@ -1,7 +1,7 @@
 parameters:
   ###################################################################
   #                                                                 #
-  #   shared parameters                                             #
+  #   global parameters                                             #
   #                                                                 #
   ###################################################################
   - name: projectType # required. Must be one of: cloud, container, web
@@ -60,6 +60,7 @@ parameters:
 
   - name: dkrECRUrl # required if "projectType" = "container".
     type: string
+    default: ""
 
   - name: dkrTag # optional if "projectType" = "container". Default = latest
     type: string
@@ -90,18 +91,24 @@ jobs:
       - ${{ elseif eq(parameters.projectType, 'container') }}:
           - template: ../steps/build-container.yml
             parameters:
+              # required - force AZ Pipelines validator to throw an error
+              ${{ if ne(parameters.dkrECRUrl, '') }}:
+                dkrECRUrl: ${{ parameters.dkrECRUrl }}
               dkrFile: ${{ parameters.dkrFile }}
-              dkrECRUrl: ${{ parameters.dkrECRUrl }} # required
               dkrTag: ${{ parameters.dkrTag }} # ${{ parameters.dkrECRUrl }}/${{ parameters.dkrRegistryName }}:${{ parameters.dkrImageTag }}
 
       - ${{ elseif eq(parameters.projectType, 'web') }}:
           - template: ../steps/get-ssm-params.yml
             parameters:
-              awsRegion: ${{ parameters.awsRegion }} # required if awsSSMParamPathList > 0
+              # required - force AZ Pipelines validator to throw an error
+              ${{ if and(ne(parameters.awsRegion, ''), gt(length(parameters.awsSSMParamPathList), 0)) }}:
+                awsRegion: ${{ parameters.awsRegion }}
+              ${{ if ne(parameters.dotEnvFileStoreUrl, '') }}:
+                dotEnvFileStoreUrl: ${{ parameters.dotEnvFileStoreUrl }}
+
               awsSSMParamPathList: ${{ parameters.awsSSMParamPathList }}
               dotEnvFilePath: ${{ parameters.dotEnvFilePath }}
               dotEnvFileName: ${{ parameters.dotEnvFileName }}
-              dotEnvFileStoreUrl: ${{ parameters.dotEnvFileStoreUrl }} # required
 
           - template: ../steps/build-web.yml
             parameters:
