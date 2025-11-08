@@ -1,0 +1,74 @@
+parameters:
+  - name: projectName
+    type: string
+
+  - name: dotEnvFileArtifactName
+    type: string
+
+  ###################################################################
+  #                                                                 #
+  #   stages/load-variables.yml parameters                          #
+  #                                                                 #
+  ###################################################################
+  - name: customScript # Default = empty string. AZ Pipelines support script. If defined, ignores SSM implementation
+    type: string
+    default: ""
+
+  - name: awsSSMParamPathList # Default = []. List of strings. AWS SSM Parameter path to pull variables from. If empty, step is disabled.
+    type: object
+    default: []
+
+  - name: awsRegion # Default = empty string. Required if intending to retrieve secrets from AWS SSM Parameter Store.
+    type: string
+    default: ""
+
+  - name: dotEnvFileDir # Default = '.', Location to store env file on the, e.g. ./path/to/env/file
+    type: string
+    default: "."
+
+  - name: dotEnvFileName # Default = '.env'. Name for env, e.g. .env
+    type: string
+    default: ".env"
+
+  - name: dotEnvFileStoreName # Default = empty string. Required if intending to retrieve secrets from AWS SSM Parameter Store. AWS S3 bucket name where env the file will be uploaded to
+    type: string
+    default: ""
+
+  ###################################################################
+  #                                                                 #
+  #   jobs/test.yml parameters                                      #
+  #                                                                 #
+  ###################################################################
+  - name: testType # required, must be one of: unit, integration
+    type: string
+    default: unit
+    values:
+      - unit
+      - integration
+
+  - name: dotEnvFilePath
+    type: string
+    default: ""
+
+  - name: script # required to run tests
+    type: string
+    default: echo 'Tests not implemented.'
+
+stages:
+  - template: ./load-variables.yml
+    parameters:
+      projectName: ${{ parameters.projectName }}
+      customScript: ${{ parameters.customScript }}
+      awsSSMParamPathList: ${{ parameters.awsSSMParamPathList }}
+      awsRegion: ${{ parameters.awsRegion }}
+      dotEnvFileDir: ${{ parameters.dotEnvFileDir }}
+      dotEnvFileName: ${{ parameters.dotEnvFileName }}
+      dotEnvFileStoreName: ${{ parameters.dotEnvFileStoreName }}
+      dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
+
+  - template: ../jobs/test.yml
+    parameters:
+      testType: ${{ parameters.testType }}
+      dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
+      dotEnvFilePath: ${{ parameters.dotEnvFilePath }}
+      script: ${{ parameters.script }}
