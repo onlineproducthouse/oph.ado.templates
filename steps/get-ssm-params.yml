@@ -15,7 +15,7 @@ parameters:
     type: string
     default: ".env"
 
-  - name: dotEnvFileStoreUrl # Default = empty string. AWS S3 bucket URL where env the file will be uploaded to
+  - name: dotEnvFileStoreName # Default = empty string. AWS S3 bucket name where env the file will be uploaded to
     type: string
     default: ""
 
@@ -54,4 +54,4 @@ steps:
         echo "Pulled $AWS_SSM_PARAMS_COUNT parameters from path: $SSM_PATH"
       done
 
-      aws s3 cp ${{ parameters.dotEnvFilePath }}/${{ parameters.dotEnvFileName }} ${{ parameters.dotEnvFileStoreUrl }}
+      aws s3 cp ${{ parameters.dotEnvFilePath }}/${{ parameters.dotEnvFileName }} "s3://${{ parameters.dotEnvFileStoreName }}"

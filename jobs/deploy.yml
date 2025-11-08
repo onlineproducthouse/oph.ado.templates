@@ -40,7 +40,7 @@ parameters:
     type: string
     default: ".env"
 
-  - name: dotEnvFileStoreUrl # Default = empty string. AWS S3 bucket URL where env the file will be uploaded to
+  - name: dotEnvFileStoreName # Default = empty string. AWS S3 bucket name where env the file will be uploaded to
     type: string
     default: ""
 
@@ -134,8 +134,8 @@ jobs:
                     # required - force AZ Pipelines validator to throw an error
                     ${{ if and(ne(parameters.awsRegion, ''), gt(length(parameters.awsSSMParamPathList), 0)) }}:
                       awsRegion: ${{ parameters.awsRegion }}
-                    ${{ if ne(parameters.dotEnvFileStoreUrl, '') }}:
-                      dotEnvFileStoreUrl: ${{ parameters.dotEnvFileStoreUrl }}
+                    ${{ if ne(parameters.dotEnvFileStoreName, '') }}:
+                      dotEnvFileStoreName: ${{ parameters.dotEnvFileStoreName }}
 
                     awsSSMParamPathList: ${{ parameters.awsSSMParamPathList }}
                     dotEnvFilePath: ${{ parameters.dotEnvFilePath }}
