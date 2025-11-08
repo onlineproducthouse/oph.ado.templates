@@ -1,15 +1,10 @@
 parameters:
-  ###################################################################
-  #                                                                 #
-  #   global parameters                                             #
-  #                                                                 #
-  ###################################################################
   - name: projectName
     type: string
 
   ###################################################################
   #                                                                 #
-  #   load-variables.yml parameters                                 #
+  #   jobs/load-variables.yml parameters                            #
   #                                                                 #
   ###################################################################
   - name: customScript # Default = empty string. AZ Pipelines support script. If defined, ignores SSM implementation

@@ -1,9 +1,4 @@
 parameters:
-  ###################################################################
-  #                                                                 #
-  #   global parameters                                             #
-  #                                                                 #
-  ###################################################################
   - name: projectType # required. Must be one of: cloud, container, web
     type: string
     values:
@@ -21,7 +16,7 @@ parameters:
 
   ###################################################################
   #                                                                 #
-  #   build-cloud.yml parameters                                    #
+  #   steps/build-cloud.yml parameters                              #
   #                                                                 #
   ###################################################################
   # optional if "projectType" = "cloud".
@@ -34,7 +29,7 @@ parameters:
 
   ###################################################################
   #                                                                 #
-  #   build-container.yml parameters                                #
+  #   steps/build-container.yml parameters                                #
   #                                                                 #
   ###################################################################
   - name: dkrFile # optional if "projectType" = "container". Default = Dockerfile
@@ -51,7 +46,7 @@ parameters:
 
   ###################################################################
   #                                                                 #
-  #   post-build.yml parameters                                     #
+  #   steps/post-build.yml parameters                                     #
   #                                                                 #
   ###################################################################
   - name: artifactName # optional, leave blank if you do not need artifacts

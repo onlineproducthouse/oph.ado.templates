@@ -1,9 +1,4 @@
 parameters:
-  ###################################################################
-  #                                                                 #
-  #   global parameters                                             #
-  #                                                                 #
-  ###################################################################
   - name: environmentName
     type: string
 
@@ -27,7 +22,7 @@ parameters:
 
   ###################################################################
   #                                                                 #
-  #   deploy-cloud.yml parameters                                   #
+  #   steps/deploy-cloud.yml parameters                             #
   #                                                                 #
   ###################################################################
   # optional if "projectType" = "cloud".
@@ -40,7 +35,7 @@ parameters:
 
   ###################################################################
   #                                                                 #
-  #   deploy-container-[app|db].yml parameters                      #
+  #   steps/deploy-container-[app|db].yml parameters                #
   #                                                                 #
   ###################################################################
   - name: dkrECRUrl # required if "projectType" = "container-app" OR "container-db".
@@ -53,7 +48,7 @@ parameters:
 
   ###################################################################
   #                                                                 #
-  #   deploy-container-app.yml parameters.                          #
+  #   steps/deploy-container-app.yml parameters.                    #
   #                                                                 #
   ###################################################################
   - name: ecsTaskDefFamily # required if "projectType" = "container-app"
@@ -83,7 +78,7 @@ parameters:
 
   ###################################################################
   #                                                                 #
-  #   deploy-web.yml parameters.                                    #
+  #   steps/deploy-web.yml parameters.                              #
   #                                                                 #
   ###################################################################
   - name: hostBucket # required if "projectType" = "web". AWS S3 Bucket name
