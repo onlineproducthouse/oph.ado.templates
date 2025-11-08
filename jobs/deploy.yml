@@ -15,32 +15,13 @@ parameters:
       - container-db
       - web
 
+  - name: dotEnvFileArtifactName
+    type: string
+
+  - name: dotEnvFileArtifactPath
+    type: string
+
   - name: artifactName # optional, leave blank if you do not need artifacts
-    type: string
-    default: ""
-
-  ###################################################################
-  #                                                                 #
-  #   get-ssm-params.yml parameters                                 #
-  #                                                                 #
-  ###################################################################
-  - name: awsSSMParamPathList # Default = []. List of strings. AWS SSM Parameter path to pull variables from. If empty, step is disabled.
-    type: object
-    default: []
-
-  - name: awsRegion # required if intending to retrieve secrets from AWS SSM Parameter Store. Default = empty string.
-    type: string
-    default: ""
-
-  - name: dotEnvFileDir # Default = '.'. Location to store env file on the, e.g. ./path/to/env/file
-    type: string
-    default: "."
-
-  - name: dotEnvFileName # Default = '.env'. Name for env, e.g. .env
-    type: string
-    default: ".env"
-
-  - name: dotEnvFileStoreName # Default = empty string. AWS S3 bucket name where env the file will be uploaded to
     type: string
     default: ""
 
@@ -93,7 +74,7 @@ parameters:
   - name: ecsSvcName # required if ecsTaskDefFamily is not empty string.
     type: string
     default: ""
-  - name: envFileStorePath # required if ecsTaskDefFamily is not empty string.
+  - name: dotEnvFileStorePath # required if ecsTaskDefFamily is not empty string.
     type: string
 
   - name: port
@@ -122,28 +103,19 @@ jobs:
       runOnce:
         deploy:
           steps:
+            - template: ../steps/artifact-download.yml
+              parameters:
+                artifactName: ${{ parameters.dotEnvFileArtifactName }}
+
             - ${{ if ne(parameters.artifactName, '') }}:
-                - download: current
-                  displayName: download artifact - ${{ parameters.artifactName }}
-                  artifact: ${{ parameters.artifactName }}
-                  patterns: "**/*"
-
-            - ${{ if startsWith(parameters.projectType, 'container') }}:
-                - template: ../steps/get-ssm-params.yml
+                - template: ../steps/artifact-download.yml
                   parameters:
-                    # required - force AZ Pipelines validator to throw an error
-                    ${{ if and(ne(parameters.awsRegion, ''), gt(length(parameters.awsSSMParamPathList), 0)) }}:
-                      awsRegion: ${{ parameters.awsRegion }}
-                    ${{ if ne(parameters.dotEnvFileStoreName, '') }}:
-                      dotEnvFileStoreName: ${{ parameters.dotEnvFileStoreName }}
-
-                    awsSSMParamPathList: ${{ parameters.awsSSMParamPathList }}
-                    dotEnvFileDir: ${{ parameters.dotEnvFileDir }}
-                    dotEnvFileName: ${{ parameters.dotEnvFileName }}
+                    artifactName: ${{ parameters.artifactName }}
 
             - ${{ if eq(parameters.projectType, 'cloud') }}:
                 - template: ../steps/deploy-cloud.yml
                   parameters:
+                    dotEnvFileArtifactPath: ${{ parameters.dotEnvFileArtifactPath }}
                     tfChildDir: ${{ parameters.tfChildDir }}
 
             - ${{ if eq(parameters.projectType, 'container-app') }}:
@@ -162,8 +134,8 @@ jobs:
                         ecsClusterName: ${{ parameters.ecsClusterName }}
                       ${{ if ne(parameters.ecsSvcName, '') }}:
                         ecsSvcName: ${{ parameters.ecsSvcName }}
-                      ${{ if ne(parameters.envFileStorePath, '') }}:
-                        envFileStorePath: ${{ parameters.envFileStorePath }}
+                      ${{ if ne(parameters.dotEnvFileStorePath, '') }}:
+                        dotEnvFileStorePath: ${{ parameters.dotEnvFileStorePath }}
 
                     dkrTag: ${{ parameters.dkrTag }}
                     ecsCpu: ${{ parameters.ecsCpu }}
@@ -177,6 +149,7 @@ jobs:
                     ${{ if ne(parameters.dkrECRUrl, '') }}:
                       dkrECRUrl: ${{ parameters.dkrECRUrl }}
                     dkrTag: ${{ parameters.dkrTag }}
+                    dotEnvFileArtifactPath: ${{ parameters.dotEnvFileArtifactPath }}
 
             - ${{ elseif eq(parameters.projectType, 'web') }}:
                 - template: ../steps/deploy-web.yml

@@ -11,28 +11,11 @@ parameters:
       - container
       - web
 
-  ###################################################################
-  #                                                                 #
-  #   get-ssm-params.yml parameters                                 #
-  #                                                                 #
-  ###################################################################
-  - name: awsSSMParamPathList # optional if "projectType" = "web". Default = []. List of strings. AWS SSM Parameter path to pull variables from. If empty, step is disabled.
-    type: object
-    default: []
-
-  - name: awsRegion # required if "projectType" = "web" and intending to retrieve secrets from AWS SSM Parameter Store. Default = empty string.
+  - name: dotEnvFileArtifactName # required if "projectType" = "web"
     type: string
     default: ""
 
-  - name: dotEnvFileDir # optional if "projectType" = "web". Default = '.'. Location to store env file on the, e.g. ./path/to/env/file
-    type: string
-    default: "."
-
-  - name: dotEnvFileName # optional if "projectType" = "web". Default = '.env'. Name for env, e.g. .env
-    type: string
-    default: ".env"
-
-  - name: dotEnvFileStoreName # required if "projectType" = "web". Default = empty string. AWS S3 bucket name where env the file will be uploaded to
+  - name: dotEnvFileArtifactPath # required if "projectType" = "web"
     type: string
     default: ""
 
@@ -64,16 +47,7 @@ parameters:
 
   - name: dkrTag # optional if "projectType" = "container". Default = latest
     type: string
-    default: latest
-
-  ###################################################################
-  #                                                                 #
-  #   build-web.yml parameters                                      #
-  #                                                                 #
-  ###################################################################
-  - name: envFilePath # required if "projectType" = "web"
-    type: string
-    default: ""
+    default: latest # ${{ parameters.dkrECRUrl }}/${{ parameters.dkrRegistryName }}:${{ parameters.dkrImageTag }}
 
   ###################################################################
   #                                                                 #
@@ -92,7 +66,20 @@ jobs:
   - job: build
     displayName: build ${{ parameters.projectType }}
     steps:
-      - ${{ if eq(parameters.projectType, 'cloud') }}:
+      - ${{ if eq(parameters.projectType, 'web') }}:
+          - template: ../steps/artifact-download.yml
+            parameters:
+              # required - force AZ Pipelines validator to throw an error
+              ${{ if ne(parameters.dotEnvFileArtifactName, '') }}:
+                artifactName: ${{ parameters.dotEnvFileArtifactName }}
+
+          - template: ../steps/build-web.yml
+            parameters:
+              # required - force AZ Pipelines validator to throw an error
+              ${{ if ne(parameters.dotEnvFileArtifactPath, '') }}:
+                dotEnvFilePath: ${{ parameters.dotEnvFileArtifactPath }}
+
+      - ${{ elseif eq(parameters.projectType, 'cloud') }}:
           - template: ../steps/build-cloud.yml
             parameters:
               tfChildDir: ${{ parameters.tfChildDir }}
@@ -104,16 +91,10 @@ jobs:
               ${{ if ne(parameters.dkrECRUrl, '') }}:
                 dkrECRUrl: ${{ parameters.dkrECRUrl }}
               dkrFile: ${{ parameters.dkrFile }}
-              dkrTag: ${{ parameters.dkrTag }} # ${{ parameters.dkrECRUrl }}/${{ parameters.dkrRegistryName }}:${{ parameters.dkrImageTag }}
+              dkrTag: ${{ parameters.dkrTag }}
 
-      - ${{ elseif eq(parameters.projectType, 'web') }}:
-          - template: ../steps/build-web.yml
+      - ${{ if ne(parameters.artifactName, '') }}:
+          - template: ../steps/post-build.yml
             parameters:
-              # required - force AZ Pipelines validator to throw an error
-              ${{ if ne(parameters.envFilePath, '') }}:
-                envFilePath: ${{ parameters.envFilePath }}
-
-      - template: ../steps/post-build.yml
-        parameters:
-          artifactName: ${{ parameters.artifactName }}
-          artifactDir: ${{ parameters.artifactDir }}
+              artifactName: ${{ parameters.artifactName }}
+              artifactDir: ${{ parameters.artifactDir }}

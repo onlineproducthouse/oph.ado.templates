@@ -6,6 +6,11 @@ parameters:
     type: string
     default: .
 
+  - name: dotEnvFileArtifactPath
+    type: string
+
 steps:
   - name: DeployCloud
-    script: terraform -chdir=${{ parameters.tfChildDir }} apply tfplan -auto-approve
+    script: |
+      source $(echo "${{ parameters.dotEnvFileArtifactPath }}") \
+        && terraform -chdir=${{ parameters.tfChildDir }} apply tfplan -auto-approve
