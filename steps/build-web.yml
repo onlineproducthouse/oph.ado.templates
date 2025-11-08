@@ -1,5 +1,5 @@
 parameters:
-  - name: envFilePath
+  - name: dotEnvFilePath
     type: string
 
 steps:
@@ -11,5 +11,5 @@ steps:
 
   - name: BuildWeb
     script: |
-      source $(echo "${{ parameters.envFilePath }}") \
+      source $(echo "${{ parameters.dotEnvFilePath }}") \
         && npm run build

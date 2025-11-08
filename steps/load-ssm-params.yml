@@ -20,7 +20,7 @@ parameters:
     default: ""
 
 steps:
-  - name: GetSSMParams
+  - name: LoadVariables
     script: |
       IFS=';'
       for SSM_PATH in ${{ join(';', parameters.awsSSMParamPathList) }}; do

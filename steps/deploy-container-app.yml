@@ -19,7 +19,7 @@ parameters:
     type: string
   - name: ecsSvcName
     type: string
-  - name: envFileStorePath
+  - name: dotEnvFileStorePath
     type: string
 
   - name: port
@@ -80,7 +80,7 @@ steps:
             },
             "environmentFiles": [
               {
-                "value": "arn:aws:s3:::${{ parameters.envFileStorePath }}",
+                "value": "arn:aws:s3:::${{ parameters.dotEnvFileStorePath }}",
                 "type": "s3"
               }
             ]
