@@ -94,14 +94,17 @@ stages:
       dotEnvFileStoreName: ${{ parameters.dotEnvFileStoreName }}
       dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
 
-  - template: ../jobs/build.yml
-    parameters:
-      projectType: ${{ parameters.projectType }}
-      dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
-      dotEnvFileArtifactPath: ${{ parameters.dotEnvFileArtifactPath }}
-      tfChildDir: ${{ parameters.tfChildDir }}
-      dkrFile: ${{ parameters.dkrFile }}
-      dkrECRUrl: ${{ parameters.dkrECRUrl }}
-      dkrTag: ${{ parameters.dkrTag }}
-      artifactName: ${{ parameters.artifactName }}
-      artifactDir: ${{ parameters.artifactDir }}
+  - stage: build
+    displayName: build - ${{ parameters.projectName }}
+    jobs:
+      - template: ../jobs/build.yml
+        parameters:
+          projectType: ${{ parameters.projectType }}
+          dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
+          dotEnvFileArtifactPath: ${{ parameters.dotEnvFileArtifactPath }}
+          tfChildDir: ${{ parameters.tfChildDir }}
+          dkrFile: ${{ parameters.dkrFile }}
+          dkrECRUrl: ${{ parameters.dkrECRUrl }}
+          dkrTag: ${{ parameters.dkrTag }}
+          artifactName: ${{ parameters.artifactName }}
+          artifactDir: ${{ parameters.artifactDir }}

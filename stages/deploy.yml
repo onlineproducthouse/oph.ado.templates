@@ -120,24 +120,27 @@ stages:
       dotEnvFileStoreName: ${{ parameters.dotEnvFileStoreName }}
       dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
 
-  - template: ../jobs/test.yml
-    parameters:
-      environmentName: ${{ parameters.environmentName }}
-      projectType: ${{ parameters.projectType }}
-      dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
-      dotEnvFileArtifactPath: ${{ parameters.dotEnvFileArtifactPath }}
-      artifactName: ${{ parameters.artifactName }}
-      tfChildDir: ${{ parameters.tfChildDir }}
-      dkrECRUrl: ${{ parameters.dkrECRUrl }}
-      dkrTag: ${{ parameters.dkrTag }}
-      ecsTaskDefFamily: ${{ parameters.ecsTaskDefFamily }}
-      ecsRoleArn: ${{ parameters.ecsRoleArn }}
-      ecsCpu: ${{ parameters.ecsCpu }}
-      ecsMemory: ${{ parameters.ecsMemory }}
-      ecsClusterName: ${{ parameters.ecsClusterName }}
-      ecsSvcName: ${{ parameters.ecsSvcName }}
-      dotEnvFileStorePath: ${{ parameters.dotEnvFileStorePath }}
-      port: ${{ parameters.port }}
-      hostBucket: ${{ parameters.hostBucket }}
-      cdnId: ${{ parameters.cdnId }}
-      dist: ${{ parameters.dist }}
+  - stage: deploy
+    displayName: deploy - ${{ parameters.projectName }}
+    jobs:
+      - template: ../jobs/deploy.yml
+        parameters:
+          environmentName: ${{ parameters.environmentName }}
+          projectType: ${{ parameters.projectType }}
+          dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
+          dotEnvFileArtifactPath: ${{ parameters.dotEnvFileArtifactPath }}
+          artifactName: ${{ parameters.artifactName }}
+          tfChildDir: ${{ parameters.tfChildDir }}
+          dkrECRUrl: ${{ parameters.dkrECRUrl }}
+          dkrTag: ${{ parameters.dkrTag }}
+          ecsTaskDefFamily: ${{ parameters.ecsTaskDefFamily }}
+          ecsRoleArn: ${{ parameters.ecsRoleArn }}
+          ecsCpu: ${{ parameters.ecsCpu }}
+          ecsMemory: ${{ parameters.ecsMemory }}
+          ecsClusterName: ${{ parameters.ecsClusterName }}
+          ecsSvcName: ${{ parameters.ecsSvcName }}
+          dotEnvFileStorePath: ${{ parameters.dotEnvFileStorePath }}
+          port: ${{ parameters.port }}
+          hostBucket: ${{ parameters.hostBucket }}
+          cdnId: ${{ parameters.cdnId }}
+          dist: ${{ parameters.dist }}

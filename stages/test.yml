@@ -66,9 +66,12 @@ stages:
       dotEnvFileStoreName: ${{ parameters.dotEnvFileStoreName }}
       dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
 
-  - template: ../jobs/test.yml
-    parameters:
-      testType: ${{ parameters.testType }}
-      dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
-      dotEnvFilePath: ${{ parameters.dotEnvFilePath }}
-      script: ${{ parameters.script }}
+  - stage: test
+    displayName: test - ${{ parameters.projectName }}
+    jobs:
+      - template: ../jobs/test.yml
+        parameters:
+          testType: ${{ parameters.testType }}
+          dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
+          dotEnvFilePath: ${{ parameters.dotEnvFilePath }}
+          script: ${{ parameters.script }}
