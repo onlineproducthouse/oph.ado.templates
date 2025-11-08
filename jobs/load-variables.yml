@@ -4,6 +4,10 @@ parameters:
   #   global parameters                                             #
   #                                                                 #
   ###################################################################
+  - name: customScript # Default = empty string. AZ Pipelines support script. If defined, ignores SSM implementation
+    type: string
+    default: ""
+
   - name: awsSSMParamPathList # Default = []. List of strings. AWS SSM Parameter path to pull variables from. If empty, step is disabled.
     type: object
     default: []
@@ -37,26 +41,31 @@ parameters:
     default: ""
 
 jobs:
-  - job: ssm
-    displayName: get ssm parameters
+  - job: variables
+    displayName: load variables
 
-    ${{ if gt(length(parameters.awsSSMParamPathList), 0) }}:
+    ${{ if or(ne(parameters.customScript, ''), gt(length(parameters.awsSSMParamPathList), 0)) }}:
       enable: true
     ${{ else }}:
       enable: false
 
     steps:
-      - template: ../steps/get-ssm-params.yml
-        parameters:
-          # required - force AZ Pipelines validator to throw an error
-          ${{ if ne(parameters.awsRegion, '') }}:
-            awsRegion: ${{ parameters.awsRegion }}
-          ${{ if ne(parameters.dotEnvFileStoreName, '') }}:
-            dotEnvFileStoreName: ${{ parameters.dotEnvFileStoreName }}
+      - ${{ if ne(parameters.customScript, '') }}:
+          - name: LoadVariables
+            script: ${{ parameters.customScript }}
 
-          awsSSMParamPathList: ${{ parameters.awsSSMParamPathList }}
-          dotEnvFileDir: ${{ parameters.dotEnvFileDir }}
-          dotEnvFileName: ${{ parameters.dotEnvFileName }}
+      - ${{ else }}:
+          - template: ../steps/load-ssm-params.yml
+            parameters:
+              # required - force AZ Pipelines validator to throw an error
+              ${{ if ne(parameters.awsRegion, '') }}:
+                awsRegion: ${{ parameters.awsRegion }}
+              ${{ if ne(parameters.dotEnvFileStoreName, '') }}:
+                dotEnvFileStoreName: ${{ parameters.dotEnvFileStoreName }}
+
+              awsSSMParamPathList: ${{ parameters.awsSSMParamPathList }}
+              dotEnvFileDir: ${{ parameters.dotEnvFileDir }}
+              dotEnvFileName: ${{ parameters.dotEnvFileName }}
 
       - template: ../steps/post-build.yml
         parameters:
