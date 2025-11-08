@@ -50,9 +50,6 @@ parameters:
       - container-db
       - web
 
-  - name: dotEnvFileArtifactPath
-    type: string
-
   - name: artifactName # optional, leave blank if you do not need artifacts
     type: string
     default: ""
@@ -91,8 +88,6 @@ parameters:
   - name: ecsSvcName # required if ecsTaskDefFamily is not empty string.
     type: string
     default: ""
-  - name: dotEnvFileStorePath # required if ecsTaskDefFamily is not empty string.
-    type: string
 
   - name: port
     type: number
@@ -128,7 +123,7 @@ stages:
           environmentName: ${{ parameters.environmentName }}
           projectType: ${{ parameters.projectType }}
           dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
-          dotEnvFileArtifactPath: ${{ parameters.dotEnvFileArtifactPath }}
+          dotEnvFileArtifactPath: ${{ parameters.dotEnvFileDir }}/${{ parameters.dotEnvFileName }}
           artifactName: ${{ parameters.artifactName }}
           tfChildDir: ${{ parameters.tfChildDir }}
           dkrECRUrl: ${{ parameters.dkrECRUrl }}
@@ -139,7 +134,7 @@ stages:
           ecsMemory: ${{ parameters.ecsMemory }}
           ecsClusterName: ${{ parameters.ecsClusterName }}
           ecsSvcName: ${{ parameters.ecsSvcName }}
-          dotEnvFileStorePath: ${{ parameters.dotEnvFileStorePath }}
+          dotEnvFileStorePath: ${{ parameters.dotEnvFileStoreName }}/${{ parameters.dotEnvFileDir }}/${{ parameters.dotEnvFileName }}
           port: ${{ parameters.port }}
           hostBucket: ${{ parameters.hostBucket }}
           cdnId: ${{ parameters.cdnId }}

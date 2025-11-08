@@ -46,10 +46,6 @@ parameters:
       - unit
       - integration
 
-  - name: dotEnvFilePath
-    type: string
-    default: ""
-
   - name: script # required to run tests
     type: string
     default: echo 'Tests not implemented.'
@@ -73,5 +69,5 @@ stages:
         parameters:
           testType: ${{ parameters.testType }}
           dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
-          dotEnvFilePath: ${{ parameters.dotEnvFilePath }}
+          dotEnvFilePath: ${{ parameters.dotEnvFileDir }}/${{ parameters.dotEnvFileName }}
           script: ${{ parameters.script }}

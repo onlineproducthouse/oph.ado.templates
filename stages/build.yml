@@ -50,10 +50,6 @@ parameters:
       - container
       - web
 
-  - name: dotEnvFileArtifactPath # required if "projectType" = "web"
-    type: string
-    default: ""
-
   # optional if "projectType" = "cloud".
   # Leave empty if root directory, e.g. '.'
   # Terraform execution directory.
@@ -101,7 +97,7 @@ stages:
         parameters:
           projectType: ${{ parameters.projectType }}
           dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
-          dotEnvFileArtifactPath: ${{ parameters.dotEnvFileArtifactPath }}
+          dotEnvFileArtifactPath: ${{ parameters.dotEnvFileDir }}/${{ parameters.dotEnvFileName }}
           tfChildDir: ${{ parameters.tfChildDir }}
           dkrFile: ${{ parameters.dkrFile }}
           dkrECRUrl: ${{ parameters.dkrECRUrl }}
