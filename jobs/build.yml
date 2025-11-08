@@ -24,7 +24,7 @@ parameters:
     type: string
     default: ""
 
-  - name: dotEnvFilePath # optional if "projectType" = "web". Default = '.'. Location to store env file on the, e.g. ./path/to/env/file
+  - name: dotEnvFileDir # optional if "projectType" = "web". Default = '.'. Location to store env file on the, e.g. ./path/to/env/file
     type: string
     default: "."
 
@@ -68,6 +68,15 @@ parameters:
 
   ###################################################################
   #                                                                 #
+  #   build-web.yml parameters                                      #
+  #                                                                 #
+  ###################################################################
+  - name: envFilePath # required if "projectType" = "web"
+    type: string
+    default: ""
+
+  ###################################################################
+  #                                                                 #
   #   post-build.yml parameters                                     #
   #                                                                 #
   ###################################################################
@@ -75,7 +84,7 @@ parameters:
     type: string
     default: ""
 
-  - name: artifactPath # Default = '.' e.g. $(Build.SourcesDirectory)/dist
+  - name: artifactDir # Default = '.' e.g. $(Build.SourcesDirectory)/dist
     type: string
     default: "."
 
@@ -98,23 +107,13 @@ jobs:
               dkrTag: ${{ parameters.dkrTag }} # ${{ parameters.dkrECRUrl }}/${{ parameters.dkrRegistryName }}:${{ parameters.dkrImageTag }}
 
       - ${{ elseif eq(parameters.projectType, 'web') }}:
-          - template: ../steps/get-ssm-params.yml
-            parameters:
-              # required - force AZ Pipelines validator to throw an error
-              ${{ if and(ne(parameters.awsRegion, ''), gt(length(parameters.awsSSMParamPathList), 0)) }}:
-                awsRegion: ${{ parameters.awsRegion }}
-              ${{ if ne(parameters.dotEnvFileStoreName, '') }}:
-                dotEnvFileStoreName: ${{ parameters.dotEnvFileStoreName }}
-
-              awsSSMParamPathList: ${{ parameters.awsSSMParamPathList }}
-              dotEnvFilePath: ${{ parameters.dotEnvFilePath }}
-              dotEnvFileName: ${{ parameters.dotEnvFileName }}
-
           - template: ../steps/build-web.yml
             parameters:
-              envFilePath: ${{ parameters.dotEnvFilePath }}/${{ parameters.dotEnvFileName }}
+              # required - force AZ Pipelines validator to throw an error
+              ${{ if ne(parameters.envFilePath, '') }}:
+                envFilePath: ${{ parameters.envFilePath }}
 
       - template: ../steps/post-build.yml
         parameters:
           artifactName: ${{ parameters.artifactName }}
-          artifactPath: ${{ parameters.artifactPath }}
+          artifactDir: ${{ parameters.artifactDir }}

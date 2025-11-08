@@ -32,7 +32,7 @@ parameters:
     type: string
     default: ""
 
-  - name: dotEnvFilePath # Default = '.'. Location to store env file on the, e.g. ./path/to/env/file
+  - name: dotEnvFileDir # Default = '.'. Location to store env file on the, e.g. ./path/to/env/file
     type: string
     default: "."
 
@@ -138,7 +138,7 @@ jobs:
                       dotEnvFileStoreName: ${{ parameters.dotEnvFileStoreName }}
 
                     awsSSMParamPathList: ${{ parameters.awsSSMParamPathList }}
-                    dotEnvFilePath: ${{ parameters.dotEnvFilePath }}
+                    dotEnvFileDir: ${{ parameters.dotEnvFileDir }}
                     dotEnvFileName: ${{ parameters.dotEnvFileName }}
 
             - ${{ if eq(parameters.projectType, 'cloud') }}:

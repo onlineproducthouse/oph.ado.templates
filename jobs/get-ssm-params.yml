@@ -1,0 +1,64 @@
+parameters:
+  ###################################################################
+  #                                                                 #
+  #   global parameters                                             #
+  #                                                                 #
+  ###################################################################
+  - name: awsSSMParamPathList # Default = []. List of strings. AWS SSM Parameter path to pull variables from. If empty, step is disabled.
+    type: object
+    default: []
+
+  - name: awsRegion # Default = empty string. Required if intending to retrieve secrets from AWS SSM Parameter Store.
+    type: string
+    default: ""
+
+  - name: dotEnvFileDir # Default = '.', Location to store env file on the, e.g. ./path/to/env/file
+    type: string
+    default: "."
+
+  - name: dotEnvFileName # Default = '.env'. Name for env, e.g. .env
+    type: string
+    default: ".env"
+
+  - name: dotEnvFileStoreName # Default = empty string. Required if intending to retrieve secrets from AWS SSM Parameter Store. AWS S3 bucket name where env the file will be uploaded to
+    type: string
+    default: ""
+
+  ###################################################################
+  #                                                                 #
+  #   post-build.yml parameters                                     #
+  #                                                                 #
+  ###################################################################
+  # Default = empty string.
+  # Required if intending to retrieve secrets from AWS SSM Parameter Store.
+  # If left empty, env file artifact will not be published
+  - name: artifactName
+    type: string
+    default: ""
+
+jobs:
+  - job: ssm
+    displayName: get ssm parameters
+
+    ${{ if gt(length(parameters.awsSSMParamPathList), 0) }}:
+      enable: true
+    ${{ else }}:
+      enable: false
+
+    steps:
+      - template: ../steps/get-ssm-params.yml
+        parameters:
+          # required - force AZ Pipelines validator to throw an error
+          ${{ if ne(parameters.awsRegion, '') }}:
+            awsRegion: ${{ parameters.awsRegion }}
+          ${{ if ne(parameters.dotEnvFileStoreName, '') }}:
+            dotEnvFileStoreName: ${{ parameters.dotEnvFileStoreName }}
+
+          awsSSMParamPathList: ${{ parameters.awsSSMParamPathList }}
+          dotEnvFileDir: ${{ parameters.dotEnvFileDir }}
+          dotEnvFileName: ${{ parameters.dotEnvFileName }}
+
+      - template: ../steps/post-build.yml
+        parameters:
+          artifactName: ${{ parameters.artifactName }}
+          artifactDir: ${{ parameters.dotEnvFileDir }}

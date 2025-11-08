@@ -7,7 +7,7 @@ parameters:
     type: string
     default: ""
 
-  - name: dotEnvFilePath # Default = '.'. Location to store env file on the, e.g. ./path/to/env/file
+  - name: dotEnvFileDir # Default = '.'. Location to store env file on the, e.g. ./path/to/env/file
     type: string
     default: "."
 
@@ -21,12 +21,6 @@ parameters:
 
 steps:
   - name: GetSSMParams
-
-    ${{ if gt(length(parameters.awsSSMParamPathList), 0) }}:
-      enable: true
-    ${{ else }}:
-      enable: false
-
     script: |
       IFS=';'
       for SSM_PATH in ${{ join(';', parameters.awsSSMParamPathList) }}; do
@@ -47,11 +41,11 @@ steps:
           KEY=sed -e 's/^"//' -e 's/"$//' -e 's|'"$SSM_PATH"'/["]*||' <<<echo $PARAM_NAME
           VALUE=sed -e 's/^"//' -e 's/"$//' <<<echo $PARAM_VALUE
 
-          echo "$KEY"="$VALUE" >>${{ parameters.dotEnvFilePath }}/${{ parameters.dotEnvFileName }}
+          echo "$KEY"="$VALUE" >>${{ parameters.dotEnvFileDir }}/${{ parameters.dotEnvFileName }}
           echo "##vso[task.setvariable variable=$KEY;isOutput=true;issecret=true]$VALUE"
         done
 
         echo "Pulled $AWS_SSM_PARAMS_COUNT parameters from path: $SSM_PATH"
       done
 
-      aws s3 cp ${{ parameters.dotEnvFilePath }}/${{ parameters.dotEnvFileName }} "s3://${{ parameters.dotEnvFileStoreName }}"
+      aws s3 cp ${{ parameters.dotEnvFileDir }}/${{ parameters.dotEnvFileName }} "s3://${{ parameters.dotEnvFileStoreName }}"

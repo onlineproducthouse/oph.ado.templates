@@ -1,7 +1,6 @@
 parameters:
-  - name: envFilePath # Default = './.env'
+  - name: envFilePath
     type: string
-    default: ./.env
 
 steps:
   - name: InstallNodeJS

@@ -3,13 +3,13 @@ parameters:
     type: string
     default: ""
 
-  - name: artifactPath # Default = '.'
+  - name: artifactDir # Default = '.'
     type: string
     default: "."
 
 steps:
   - name: PublishArtifacts
     ${{ if ne(parameters.artifactName, '') }}:
-      - publish: ${{ parameters.artifactPath }}
+      - publish: ${{ parameters.artifactDir }}
         displayName: publish artifact - ${{ parameters.artifactName }}
         artifact: ${{ parameters.artifactName }}
