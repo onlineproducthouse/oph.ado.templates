@@ -1,0 +1,9 @@
+parameters:
+  - name: artifactName
+    type: string
+
+steps:
+  - download: current
+    displayName: download artifact - ${{ parameters.artifactName }}
+    artifact: ${{ parameters.artifactName }}
+    patterns: "**/*"

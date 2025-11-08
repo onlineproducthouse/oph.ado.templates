@@ -8,8 +8,7 @@ parameters:
     default: "."
 
 steps:
-  - name: PublishArtifacts
-    ${{ if ne(parameters.artifactName, '') }}:
-      - publish: ${{ parameters.artifactDir }}
-        displayName: publish artifact - ${{ parameters.artifactName }}
-        artifact: ${{ parameters.artifactName }}
+  - template: "./artifact-upload"
+    parameters:
+      artifactName: ${{ parameters.artifactName }}
+      artifactDir: ${{ parameters.artifactDir }}

@@ -1,0 +1,11 @@
+parameters:
+  - name: artifactName
+    type: string
+
+  - name: artifactDir
+    type: string
+
+steps:
+  - publish: ${{ parameters.artifactDir }}
+    displayName: publish artifact - ${{ parameters.artifactName }}
+    artifact: ${{ parameters.artifactName }}
