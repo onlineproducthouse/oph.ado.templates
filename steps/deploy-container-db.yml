@@ -12,5 +12,4 @@ steps:
   - name: DeployContainerDB
     script: |
       aws ecr get-login-password | docker login --username AWS --password-stdin ${{ parameters.dkrECRUrl }}
-      source $(echo "${{ parameters.dotEnvFileArtifactPath }}") \
-        && docker run --env-file .env ${{ parameters.dkrTag }}
+      docker run --env-file ${{ parameters.dotEnvFileArtifactPath }} ${{ parameters.dkrTag }}

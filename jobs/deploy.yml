@@ -44,7 +44,7 @@ parameters:
 
   - name: dkrTag # optional if "projectType" = "container-app" OR "container-db". Default = latest
     type: string
-    default: latest
+    default: ""
 
   ###################################################################
   #                                                                 #
@@ -121,6 +121,8 @@ jobs:
                       awsRegion: ${{ parameters.awsRegion }}
                     ${{ if ne(parameters.dkrECRUrl, '') }}:
                       dkrECRUrl: ${{ parameters.dkrECRUrl }}
+                    ${{ if ne(parameters.dkrTag, '') }}:
+                      dkrTag: ${{ parameters.dkrTag }}
                     ${{ if ne(parameters.ecsTaskDefFamily, '') }}:
                       ecsTaskDefFamily: ${{ parameters.ecsTaskDefFamily }}
                       ${{ if ne(parameters.ecsRoleArn, '') }}:
@@ -132,7 +134,6 @@ jobs:
                       ${{ if ne(parameters.dotEnvFileStorePath, '') }}:
                         dotEnvFileStorePath: ${{ parameters.dotEnvFileStorePath }}
 
-                    dkrTag: ${{ parameters.dkrTag }}
                     ecsCpu: ${{ parameters.ecsCpu }}
                     ecsMemory: ${{ parameters.ecsMemory }}
                     port: ${{ parameters.port }}
@@ -143,7 +144,8 @@ jobs:
                     # required - force AZ Pipelines validator to throw an error
                     ${{ if ne(parameters.dkrECRUrl, '') }}:
                       dkrECRUrl: ${{ parameters.dkrECRUrl }}
-                    dkrTag: ${{ parameters.dkrTag }}
+                    ${{ if ne(parameters.dkrTag, '') }}:
+                      dkrTag: ${{ parameters.dkrTag }}
                     dotEnvFileArtifactPath: ${{ parameters.dotEnvFileArtifactPath }}
 
             - ${{ elseif eq(parameters.projectType, 'web') }}:

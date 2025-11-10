@@ -62,43 +62,15 @@ parameters:
     type: string
     default: .
 
-  - name: dkrECRUrl # required if "projectType" = "container-app" OR "container-db".
+  - name: dkrImageRepoName # optional if "projectType" = "container".
     type: string
     default: ""
 
-  - name: dkrTag # optional if "projectType" = "container-app" OR "container-db". Default = latest
+  # determined and passed as a parameter by pipeline layer
+  - name: dkrImageTag # optional if "projectType" = "container". Default = latest
     type: string
     default: latest
 
-  - name: ecsTaskDefFamily # required if "projectType" = "container-app"
-    type: string
-    default: ""
-  - name: ecsRoleArn # required if ecsTaskDefFamily is not empty string.
-    type: string
-    default: ""
-  - name: ecsCpu # required if ecsTaskDefFamily is not empty string.
-    type: string
-    default: 0
-  - name: ecsMemory # required if ecsTaskDefFamily is not empty string.
-    type: string
-    default: 0
-  - name: ecsClusterName # required if ecsTaskDefFamily is not empty string.
-    type: string
-    default: ""
-  - name: ecsSvcName # required if ecsTaskDefFamily is not empty string.
-    type: string
-    default: ""
-
-  - name: port
-    type: number
-    default: 0
-
-  - name: hostBucket # required if "projectType" = "web". AWS S3 Bucket name
-    type: string
-    default: ""
-  - name: cdnId # required if "projectType" = "web"
-    type: string
-    default: ""
   - name: dist # required if "projectType" = "web". The folder to upload to AWS S3
     type: string
     default: ""
@@ -122,20 +94,29 @@ stages:
         parameters:
           environmentName: ${{ parameters.environmentName }}
           projectType: ${{ parameters.projectType }}
+
           dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
           dotEnvFileArtifactPath: ${{ parameters.dotEnvFileDir }}/${{ parameters.dotEnvFileName }}
+
           artifactName: ${{ parameters.artifactName }}
+
           tfChildDir: ${{ parameters.tfChildDir }}
-          dkrECRUrl: ${{ parameters.dkrECRUrl }}
-          dkrTag: ${{ parameters.dkrTag }}
-          ecsTaskDefFamily: ${{ parameters.ecsTaskDefFamily }}
-          ecsRoleArn: ${{ parameters.ecsRoleArn }}
-          ecsCpu: ${{ parameters.ecsCpu }}
-          ecsMemory: ${{ parameters.ecsMemory }}
-          ecsClusterName: ${{ parameters.ecsClusterName }}
-          ecsSvcName: ${{ parameters.ecsSvcName }}
+
+          dkrECRUrl: $[stageDependencies.variables.variables.outputs['LoadVariables.IMAGE_REGISTRY_BASE_URL']]
+          ${{ if eq(parameters.dkrImageRepoName, '') }}:
+            dkrTag: ""
+          ${{ else }}:
+            dkrTag: $[stageDependencies.variables.variables.outputs['LoadVariables.IMAGE_REGISTRY_BASE_URL']]/${{ parameters.dkrImageRepoName }}:${{ parameters.dkrImageTag }}
+
+          ecsTaskDefFamily: $[stageDependencies.variables.variables.outputs['LoadVariables.TASK_FAMILY']]
+          ecsRoleArn: $[stageDependencies.variables.variables.outputs['LoadVariables.TASK_ROLE_ARN']]
+          ecsCpu: $[stageDependencies.variables.variables.outputs['LoadVariables.CONTAINER_CPU']]
+          ecsMemory: $[stageDependencies.variables.variables.outputs['LoadVariables.CONTAINER_MEMORY_RESERVATION']]
+          ecsClusterName: $[stageDependencies.variables.variables.outputs['LoadVariables.CLUSTER_NAME']]
+          ecsSvcName: $[stageDependencies.variables.variables.outputs['LoadVariables.SERVICE_NAME']]
+          port: $[stageDependencies.variables.variables.outputs['LoadVariables.CONTAINER_PORT']]
           dotEnvFileStorePath: ${{ parameters.dotEnvFileStoreName }}/${{ parameters.dotEnvFileDir }}/${{ parameters.dotEnvFileName }}
-          port: ${{ parameters.port }}
-          hostBucket: ${{ parameters.hostBucket }}
-          cdnId: ${{ parameters.cdnId }}
+
+          hostBucket: $[stageDependencies.variables.variables.outputs['LoadVariables.S3_HOST_BUCKET_URL']]
+          cdnId: $[stageDependencies.variables.variables.outputs['LoadVariables.CDN_ID']]
           dist: ${{ parameters.dist }}

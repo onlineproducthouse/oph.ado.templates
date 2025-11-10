@@ -50,7 +50,7 @@ jobs:
             script: ${{ parameters.customScript }}
 
       - ${{ else }}:
-          - template: ../steps/load-variables.yml
+          - template: ../steps/load-ssm-params.yml
             parameters:
               # required - force AZ Pipelines validator to throw an error
               ${{ if ne(parameters.awsRegion, '') }}:

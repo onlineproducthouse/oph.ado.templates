@@ -62,13 +62,14 @@ parameters:
     type: string
     default: Dockerfile
 
-  - name: dkrECRUrl # required if "projectType" = "container".
+  - name: dkrImageRepoName # optional if "projectType" = "container".
     type: string
     default: ""
 
-  - name: dkrTag # optional if "projectType" = "container". Default = latest
+  # determined and passed as a parameter by pipeline layer
+  - name: dkrImageTag # optional if "projectType" = "container". Default = latest
     type: string
-    default: latest # ${{ parameters.dkrECRUrl }}/${{ parameters.dkrRegistryName }}:${{ parameters.dkrImageTag }}
+    default: latest
 
   - name: artifactName # optional, leave blank if you do not need artifacts
     type: string
@@ -96,11 +97,17 @@ stages:
       - template: ../jobs/build.yml
         parameters:
           projectType: ${{ parameters.projectType }}
+
           dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
           dotEnvFileArtifactPath: ${{ parameters.dotEnvFileDir }}/${{ parameters.dotEnvFileName }}
+
           tfChildDir: ${{ parameters.tfChildDir }}
+
           dkrFile: ${{ parameters.dkrFile }}
-          dkrECRUrl: ${{ parameters.dkrECRUrl }}
-          dkrTag: ${{ parameters.dkrTag }}
+          dkrECRUrl: $[stageDependencies.variables.variables.outputs['LoadVariables.IMAGE_REGISTRY_BASE_URL']]
+
+          ${{ if and(ne(parameters.dkrImageRepoName, ''), ne(parameters.dkrImageTag, '')) }}:
+            dkrTag: $[stageDependencies.variables.variables.outputs['LoadVariables.IMAGE_REGISTRY_BASE_URL']]/${{ parameters.dkrImageRepoName }}:${{ parameters.dkrImageTag }}
+
           artifactName: ${{ parameters.artifactName }}
           artifactDir: ${{ parameters.artifactDir }}
