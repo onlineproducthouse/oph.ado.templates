@@ -1,10 +1,10 @@
 parameters:
-  - name: testType # required, must be one of: unit, integration
+  - name: testType # required, must be one of: unit, int
     type: string
     default: unit
     values:
       - unit
-      - integration
+      - int
 
   - name: dotEnvFileArtifactName
     type: string

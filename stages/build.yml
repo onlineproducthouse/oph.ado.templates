@@ -93,6 +93,8 @@ stages:
 
   - stage: build
     displayName: build - ${{ parameters.projectName }}
+    dependsOn:
+      - variables
     jobs:
       - template: ../jobs/build.yml
         parameters:

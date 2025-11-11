@@ -5,6 +5,10 @@ parameters:
   - name: dotEnvFileArtifactName
     type: string
 
+  - name: dependsOnStage
+    type: stringList
+    default: []
+
   ###################################################################
   #                                                                 #
   #   stages/load-variables.yml parameters                          #
@@ -87,8 +91,12 @@ stages:
       dotEnvFileStoreName: ${{ parameters.dotEnvFileStoreName }}
       dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
 
-  - stage: deploy
+  - stage: deploy_${{ parameters.environmentName }}
     displayName: deploy - ${{ parameters.projectName }}
+    dependsOn:
+      - variables
+      - ${{ each stage in parameters.dependsOnStage }}:
+          - stage
     jobs:
       - template: ../jobs/deploy.yml
         parameters:

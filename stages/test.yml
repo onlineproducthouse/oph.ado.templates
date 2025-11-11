@@ -5,6 +5,10 @@ parameters:
   - name: dotEnvFileArtifactName
     type: string
 
+  - name: dependsOnStage
+    type: stringList
+    default: []
+
   ###################################################################
   #                                                                 #
   #   stages/load-variables.yml parameters                          #
@@ -39,12 +43,19 @@ parameters:
   #   jobs/test.yml parameters                                      #
   #                                                                 #
   ###################################################################
-  - name: testType # required, must be one of: unit, integration
+  - name: testType # required, must be one of: unit, int
     type: string
     default: unit
     values:
       - unit
-      - integration
+      - int
+
+  - name: environmentName # required, must be one of: unit, int
+    type: string
+    default: local
+    values:
+      - local
+      - qa
 
   - name: script # required to run tests
     type: string
@@ -62,12 +73,17 @@ stages:
       dotEnvFileStoreName: ${{ parameters.dotEnvFileStoreName }}
       dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
 
-  - stage: test
+  - stage: test_${{ parameters.environmentName }}_${{ parameters.testType }}
     displayName: test - ${{ parameters.projectName }}
+    dependsOn:
+      - variables
+      - ${{ each stage in parameters.dependsOnStage }}:
+          - stage
     jobs:
       - template: ../jobs/test.yml
         parameters:
           testType: ${{ parameters.testType }}
+          environmentName: ${{ parameters.environmentName }}
           dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
           dotEnvFilePath: ${{ parameters.dotEnvFileDir }}/${{ parameters.dotEnvFileName }}
           script: ${{ parameters.script }}
