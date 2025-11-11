@@ -1,0 +1,82 @@
+parameters:
+  - name: projectName
+    type: string
+  - name: projectType
+    type: string
+
+  # for parameter see: ../stages/load-variables.yml
+  - name: envVarScript
+    type: object
+
+  # for parameter see: ../stages/build.yml
+  - name: build
+    type: object
+
+  # for parameter see: ../stages/test.yml
+  - name: test
+    type: object
+    default: []
+
+  # for parameter see: ../stages/deploy.yml
+  - name: deploy
+    type: object
+    default: []
+
+stages:
+  - template: ../stages/build.yml
+    parameters:
+      projectName: ${{ parameters.projectName }}
+      projectType: ${{ parameters.projectType }}
+
+      customScript: ${{ parameters.envVarScript.customScript }}
+      awsSSMParamPathList: ${{ parameters.envVarScript.awsSSMParamPathList }}
+      awsRegion: ${{ parameters.envVarScript.awsRegion }}
+      dotEnvFileDir: ${{ parameters.envVarScript.dotEnvFileDir }}
+      dotEnvFileName: ${{ parameters.envVarScript.dotEnvFileName }}
+      dotEnvFileStoreName: ${{ parameters.envVarScript.dotEnvFileStoreName }}
+      dotEnvFileArtifactName: ${{ parameters.envVarScript.dotEnvFileArtifactName }}
+
+      tfChildDir: ${{ parameters.build.tfChildDir }}
+
+      dkrFile: ${{ parameters.build.dkrFile }}
+      dkrImageRepoName: ${{ parameters.build.dkrImageRepoName }}
+      dkrImageTag: ${{ parameters.build.dkrImageTag }}
+
+      artifactName: ${{ parameters.build.artifactName }}
+      artifactDir: ${{ parameters.build.artifactDir }}
+
+  - ${{ each item in parameters.test }}:
+      - template: ../stages/test.yml
+        parameters:
+          projectName: ${{ parameters.projectName }}
+          testType: ${{ item.testType }}
+          script: ${{ item.script }}
+
+          customScript: ${{ parameters.envVarScript.customScript }}
+          awsSSMParamPathList: ${{ parameters.envVarScript.awsSSMParamPathList }}
+          awsRegion: ${{ parameters.envVarScript.awsRegion }}
+          dotEnvFileDir: ${{ parameters.envVarScript.dotEnvFileDir }}
+          dotEnvFileName: ${{ parameters.envVarScript.dotEnvFileName }}
+          dotEnvFileStoreName: ${{ parameters.envVarScript.dotEnvFileStoreName }}
+          dotEnvFileArtifactName: ${{ parameters.envVarScript.dotEnvFileArtifactName }}
+
+  - ${{ each item in parameters.deploy }}:
+      - template: ../stages/deploy.yml
+        parameters:
+          projectName: ${{ parameters.projectName }}
+          projectType: ${{ parameters.projectType }}
+
+          environmentName: ${{ item.environmentName }}
+          artifactName: ${{ item.artifactName }}
+          tfChildDir: ${{ item.tfChildDir }}
+          dkrImageRepoName: ${{ item.dkrImageRepoName }}
+          dkrImageTag: ${{ item.dkrImageTag }}
+          dist: ${{ item.dist }}
+
+          customScript: ${{ parameters.envVarScript.customScript }}
+          awsSSMParamPathList: ${{ parameters.envVarScript.awsSSMParamPathList }}
+          awsRegion: ${{ parameters.envVarScript.awsRegion }}
+          dotEnvFileDir: ${{ parameters.envVarScript.dotEnvFileDir }}
+          dotEnvFileName: ${{ parameters.envVarScript.dotEnvFileName }}
+          dotEnvFileStoreName: ${{ parameters.envVarScript.dotEnvFileStoreName }}
+          dotEnvFileArtifactName: ${{ parameters.envVarScript.dotEnvFileArtifactName }}
