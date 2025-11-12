@@ -27,21 +27,40 @@ parameters:
     default: []
 
 stages:
-  - ${{ if or(eq(parameters.projectName, ''), eq(parameters.projectType, '')) }}:
-      - stage: no_action
-        jobs:
-          - job: no_action
-            steps:
-              - step: no_action
-                script: |
-                  echo 'pipeline not implemented.'
-                  exit 1
+  - template: ../stages/build.yml
+    parameters:
+      projectName: ${{ parameters.projectName }}
+      projectType: ${{ parameters.projectType }}
 
-  - ${{ else }}:
-      - template: ../stages/build.yml
+      customScript: ${{ parameters.envVarScript.customScript }}
+      awsSSMParamPathList: ${{ parameters.envVarScript.awsSSMParamPathList }}
+      awsRegion: ${{ parameters.envVarScript.awsRegion }}
+      dotEnvFileDir: ${{ parameters.envVarScript.dotEnvFileDir }}
+      dotEnvFileName: ${{ parameters.envVarScript.dotEnvFileName }}
+      dotEnvFileStoreName: ${{ parameters.envVarScript.dotEnvFileStoreName }}
+      dotEnvFileArtifactName: ${{ parameters.envVarScript.dotEnvFileArtifactName }}
+
+      tfChildDir: ${{ parameters.build.tfChildDir }}
+
+      dkrFile: ${{ parameters.build.dkrFile }}
+      dkrImageRepoName: ${{ parameters.build.dkrImageRepoName }}
+      dkrImageTag: ${{ parameters.build.dkrImageTag }}
+
+      artifactName: ${{ parameters.build.artifactName }}
+      artifactDir: ${{ parameters.build.artifactDir }}
+
+  - ${{ each item in parameters.test }}:
+      - template: ../stages/test.yml
         parameters:
           projectName: ${{ parameters.projectName }}
-          projectType: ${{ parameters.projectType }}
+          testType: ${{ item.testType }}
+          environmentName: ${{ item.environmentName }}
+          script: ${{ item.script }}
+
+          dependsOnStage:
+            - build
+            - ${{ if eq(item.environmentName, 'qa') }}:
+                - deploy_qa
 
           customScript: ${{ parameters.envVarScript.customScript }}
           awsSSMParamPathList: ${{ parameters.envVarScript.awsSSMParamPathList }}
@@ -51,60 +70,30 @@ stages:
           dotEnvFileStoreName: ${{ parameters.envVarScript.dotEnvFileStoreName }}
           dotEnvFileArtifactName: ${{ parameters.envVarScript.dotEnvFileArtifactName }}
 
-          tfChildDir: ${{ parameters.build.tfChildDir }}
+  - ${{ each item in parameters.deploy }}:
+      - template: ../stages/deploy.yml
+        parameters:
+          projectName: ${{ parameters.projectName }}
+          projectType: ${{ parameters.projectType }}
 
-          dkrFile: ${{ parameters.build.dkrFile }}
-          dkrImageRepoName: ${{ parameters.build.dkrImageRepoName }}
-          dkrImageTag: ${{ parameters.build.dkrImageTag }}
+          dependsOnStage:
+            - build
+            - test_local_unit
+            - test_local_int
+            - ${{ if eq(item.environmentName, 'prod') }}:
+                - test_qa_int
 
-          artifactName: ${{ parameters.build.artifactName }}
-          artifactDir: ${{ parameters.build.artifactDir }}
+          environmentName: ${{ item.environmentName }}
+          artifactName: ${{ item.artifactName }}
+          tfChildDir: ${{ item.tfChildDir }}
+          dkrImageRepoName: ${{ item.dkrImageRepoName }}
+          dkrImageTag: ${{ item.dkrImageTag }}
+          dist: ${{ item.dist }}
 
-      - ${{ each item in parameters.test }}:
-          - template: ../stages/test.yml
-            parameters:
-              projectName: ${{ parameters.projectName }}
-              testType: ${{ item.testType }}
-              environmentName: ${{ item.environmentName }}
-              script: ${{ item.script }}
-
-              dependsOnStage:
-                - build
-                - ${{ if eq(item.environmentName, 'qa') }}:
-                    - deploy_qa
-
-              customScript: ${{ parameters.envVarScript.customScript }}
-              awsSSMParamPathList: ${{ parameters.envVarScript.awsSSMParamPathList }}
-              awsRegion: ${{ parameters.envVarScript.awsRegion }}
-              dotEnvFileDir: ${{ parameters.envVarScript.dotEnvFileDir }}
-              dotEnvFileName: ${{ parameters.envVarScript.dotEnvFileName }}
-              dotEnvFileStoreName: ${{ parameters.envVarScript.dotEnvFileStoreName }}
-              dotEnvFileArtifactName: ${{ parameters.envVarScript.dotEnvFileArtifactName }}
-
-      - ${{ each item in parameters.deploy }}:
-          - template: ../stages/deploy.yml
-            parameters:
-              projectName: ${{ parameters.projectName }}
-              projectType: ${{ parameters.projectType }}
-
-              dependsOnStage:
-                - build
-                - test_local_unit
-                - test_local_int
-                - ${{ if eq(item.environmentName, 'prod') }}:
-                    - test_qa_int
-
-              environmentName: ${{ item.environmentName }}
-              artifactName: ${{ item.artifactName }}
-              tfChildDir: ${{ item.tfChildDir }}
-              dkrImageRepoName: ${{ item.dkrImageRepoName }}
-              dkrImageTag: ${{ item.dkrImageTag }}
-              dist: ${{ item.dist }}
-
-              customScript: ${{ parameters.envVarScript.customScript }}
-              awsSSMParamPathList: ${{ parameters.envVarScript.awsSSMParamPathList }}
-              awsRegion: ${{ parameters.envVarScript.awsRegion }}
-              dotEnvFileDir: ${{ parameters.envVarScript.dotEnvFileDir }}
-              dotEnvFileName: ${{ parameters.envVarScript.dotEnvFileName }}
-              dotEnvFileStoreName: ${{ parameters.envVarScript.dotEnvFileStoreName }}
-              dotEnvFileArtifactName: ${{ parameters.envVarScript.dotEnvFileArtifactName }}
+          customScript: ${{ parameters.envVarScript.customScript }}
+          awsSSMParamPathList: ${{ parameters.envVarScript.awsSSMParamPathList }}
+          awsRegion: ${{ parameters.envVarScript.awsRegion }}
+          dotEnvFileDir: ${{ parameters.envVarScript.dotEnvFileDir }}
+          dotEnvFileName: ${{ parameters.envVarScript.dotEnvFileName }}
+          dotEnvFileStoreName: ${{ parameters.envVarScript.dotEnvFileStoreName }}
+          dotEnvFileArtifactName: ${{ parameters.envVarScript.dotEnvFileArtifactName }}
