@@ -4,22 +4,22 @@ parameters:
   - name: projectType
     type: string
 
-  # for parameter see: ../stages/load-variables.yml
+  # for parameter see: ./stages/load-variables.yml
   - name: envVarScript
     type: object
 
-  # for parameter see: ../stages/build.yml
+  # for parameter see: ./stages/build.yml
   - name: build
     type: object
 
-  # for parameter see: ../stages/test.yml
+  # for parameter see: ./stages/test.yml
   #
   # supported tests: unit, int
   - name: test
     type: object
     default: []
 
-  # for parameter see: ../stages/deploy.yml
+  # for parameter see: ./stages/deploy.yml
   #
   # supported environments: qa, prod
   - name: deploy
@@ -27,7 +27,7 @@ parameters:
     default: []
 
 stages:
-  - template: ../stages/build.yml
+  - template: ./stages/build.yml
     parameters:
       projectName: ${{ parameters.projectName }}
       projectType: ${{ parameters.projectType }}
@@ -50,7 +50,7 @@ stages:
       artifactDir: ${{ parameters.build.artifactDir }}
 
   - ${{ each item in parameters.test }}:
-      - template: ../stages/test.yml
+      - template: ./stages/test.yml
         parameters:
           projectName: ${{ parameters.projectName }}
           testType: ${{ item.testType }}
@@ -71,7 +71,7 @@ stages:
           dotEnvFileArtifactName: ${{ parameters.envVarScript.dotEnvFileArtifactName }}
 
   - ${{ each item in parameters.deploy }}:
-      - template: ../stages/deploy.yml
+      - template: ./stages/deploy.yml
         parameters:
           projectName: ${{ parameters.projectName }}
           projectType: ${{ parameters.projectType }}
