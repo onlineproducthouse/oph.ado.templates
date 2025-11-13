@@ -38,12 +38,7 @@ parameters:
 jobs:
   - job: variables
     displayName: load variables
-
-    ${{ if or(ne(parameters.customScript, ''), ne(parameters.awsSSMParamPathList, '')) }}:
-      enabled: true
-    ${{ else }}:
-      enabled: false
-
+    condition: or(ne(parameters.customScript, ''), ne(parameters.awsSSMParamPathList, ''))
     steps:
       - ${{ if ne(parameters.customScript, '') }}:
           - name: LoadVariables
