@@ -1,7 +1,7 @@
 parameters:
-  - name: awsSSMParamPathList # Default = []. List of strings. AWS SSM Parameter path to pull variables from
-    type: object
-    default: []
+  - name: awsSSMParamPathList # Default = empty string. List of semi-colon seprated strings. AWS SSM Parameter path to pull variables from
+    type: string
+    default: ""
 
   - name: awsRegion # Default = empty string.
     type: string
@@ -23,7 +23,7 @@ steps:
   - name: LoadVariables
     script: |
       IFS=';'
-      for SSM_PATH in ${{ join(';', parameters.awsSSMParamPathList) }}; do
+      for SSM_PATH in ${{ parameters.awsSSMParamPathList }}; do
         echo "Loading environment variables at path: $SSM_PATH"
 
         SSM_GET_RESP=aws ssm get-parameters-by-path --path "$SSM_PATH" --region "${{ parameters.awsRegion }}" --recursive --with-decryption --output "json"

@@ -11,9 +11,9 @@ parameters:
     type: string
     default: ""
 
-  - name: awsSSMParamPathList # Default = []. List of strings. AWS SSM Parameter path to pull variables from. If empty, step is disabled.
-    type: object
-    default: []
+  - name: awsSSMParamPathList # Default = empty string. List of semi-colon seprated strings. AWS SSM Parameter path to pull variables from
+    type: string
+    default: ""
 
   - name: awsRegion # Default = empty string. Required if intending to retrieve secrets from AWS SSM Parameter Store.
     type: string
