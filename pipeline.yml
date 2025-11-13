@@ -84,6 +84,8 @@ stages:
 
               dependsOnStage:
                 - build
+                - ${{ if eq(item.testType, 'int') }}:
+                    - test_local_unit
 
               customScript: ${{ parameters.envVarScript.customScript }}
               awsSSMParamPathList: ${{ parameters.envVarScript.awsSSMParamPathList }}
@@ -103,7 +105,6 @@ stages:
 
                   dependsOnStage:
                     - test_local_unit
-                    - test_local_int
 
                   artifactName: ${{ parameters.build.artifactName }}
                   environmentName: ${{ deploy.environmentName }}
