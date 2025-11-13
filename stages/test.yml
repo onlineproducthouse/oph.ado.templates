@@ -83,7 +83,6 @@ stages:
       - template: ../jobs/test.yml
         parameters:
           testType: ${{ parameters.testType }}
-          environmentName: ${{ parameters.environmentName }}
           dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
           dotEnvFilePath: ${{ parameters.dotEnvFileDir }}/${{ parameters.dotEnvFileName }}
           script: ${{ parameters.script }}
