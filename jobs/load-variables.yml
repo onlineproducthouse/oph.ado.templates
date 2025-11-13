@@ -39,7 +39,7 @@ jobs:
   - job: variables
     displayName: load variables
 
-    ${{ if or(ne(parameters.customScript, ''), gt(length(parameters.awsSSMParamPathList), 0)) }}:
+    ${{ if or(ne(parameters.customScript, ''), ne(parameters.awsSSMParamPathList, '')) }}:
       enable: true
     ${{ else }}:
       enable: false
