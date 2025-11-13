@@ -1,36 +1,65 @@
 parameters:
   - name: projectName
     type: string
-  - name: projectType
-    type: string
 
-  # for parameter see: ./stages/load-variables.yml
   - name: envVarScript
     type: object
+    default:
+      customScript: ""
+      awsSSMParamPathList: ""
+      awsRegion: ""
+      dotEnvFileDir: ./dotEnvFile
+      dotEnvFileName: .env
+      dotEnvFileStoreName: ""
+      dotEnvFileArtifactName: dotEnvFile
 
-  # for parameter see: ./stages/build.yml
   - name: build
     type: object
+    default:
+      projectType: ""
+      tfChildDir: .
+      dkrFile: Dockerfile
+      dkrImageRepoName: ""
+      dkrImageTag: latest
+      artifactName: ""
+      artifactDir: .
 
-  # for parameter see: ./stages/test.yml
-  #
-  # supported tests: unit, int
   - name: test
     type: object
-    default: []
+    default:
+      - testType: unit
+        environmentName: local
+        script: |
+          echo "unit tests in the local environment"
 
-  # for parameter see: ./stages/deploy.yml
-  #
-  # supported environments: qa, prod
+      - testType: int
+        environmentName: local
+        script: |
+          echo "integration tests in the local environment"
+
+      - testType: int
+        environmentName: qa
+        script: |
+          echo "integration tests in the qa environment"
+
   - name: deploy
     type: object
-    default: []
+    default:
+      - environmentName: test
+        projectType: ""
+        tfChildDir: .
+        dist: .
+
+      - environmentName: qa
+        projectType: ""
+        tfChildDir: .
+        dist: .
 
 stages:
   - template: ./stages/build.yml
     parameters:
       projectName: ${{ parameters.projectName }}
-      projectType: ${{ parameters.projectType }}
+      projectType: ${{ parameters.build.projectType }}
 
       customScript: ${{ parameters.envVarScript.customScript }}
       awsSSMParamPathList: ${{ parameters.envVarScript.awsSSMParamPathList }}
@@ -74,17 +103,18 @@ stages:
       - template: ./stages/deploy.yml
         parameters:
           projectName: ${{ parameters.projectName }}
-          projectType: ${{ parameters.projectType }}
+          projectType: ${{ item.projectType }}
 
           dependsOnStage:
             - build
-            - test_local_unit
-            - test_local_int
-            - ${{ if eq(item.environmentName, 'prod') }}:
-                - test_qa_int
+            - ${{ if gt(length(parameters.test), 0) }}:
+                - test_local_unit
+                - test_local_int
+                - ${{ if eq(item.environmentName, 'prod') }}:
+                    - test_qa_int
 
           environmentName: ${{ item.environmentName }}
-          artifactName: ${{ item.artifactName }}
+          artifactName: ${{ parameters.build.artifactName }}
           tfChildDir: ${{ item.tfChildDir }}
           dkrImageRepoName: ${{ item.dkrImageRepoName }}
           dkrImageTag: ${{ item.dkrImageTag }}
