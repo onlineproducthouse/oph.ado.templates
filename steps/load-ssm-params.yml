@@ -20,8 +20,7 @@ parameters:
     default: ""
 
 steps:
-  - name: LoadVariables
-    script: |
+  - script: |
       IFS=';'
       for SSM_PATH in ${{ parameters.awsSSMParamPathList }}; do
         echo "Loading environment variables at path: $SSM_PATH"
@@ -49,3 +48,5 @@ steps:
       done
 
       aws s3 cp ${{ parameters.dotEnvFileDir }}/${{ parameters.dotEnvFileName }} "s3://${{ parameters.dotEnvFileStoreName }}"
+
+    name: LoadVariables
