@@ -38,7 +38,7 @@ parameters:
 jobs:
   - job: variables
     displayName: load variables
-    condition: or(ne(${{ parameters.customScript }}, ''), ne(${{ parameters.awsSSMParamPathList }}, ''))
+    condition: or(ne('${{ parameters.customScript }}', ''), ne('${{ parameters.awsSSMParamPathList }}', ''))
     steps:
       - ${{ if ne(parameters.customScript, '') }}:
           - script: ${{ parameters.customScript }}
