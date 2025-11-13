@@ -40,9 +40,9 @@ jobs:
     displayName: load variables
 
     ${{ if or(ne(parameters.customScript, ''), ne(parameters.awsSSMParamPathList, '')) }}:
-      enable: true
+      enabled: true
     ${{ else }}:
-      enable: false
+      enabled: false
 
     steps:
       - ${{ if ne(parameters.customScript, '') }}:
