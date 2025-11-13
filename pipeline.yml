@@ -51,40 +51,66 @@ parameters:
     default: []
 
 stages:
-  - ${{ if ne(parameters.buildProjectType, '') }}:
-      - template: ./stages/build.yml
-        parameters:
-          projectName: ${{ parameters.projectName }}
-          projectType: ${{ parameters.buildProjectType }}
+  - template: ./stages/build.yml
+    parameters:
+      projectName: ${{ parameters.projectName }}
+      projectType: ${{ parameters.buildProjectType }}
 
-          customScript: ${{ parameters.envVarScript.customScript }}
-          awsSSMParamPathList: ${{ parameters.envVarScript.awsSSMParamPathList }}
-          awsRegion: ${{ parameters.envVarScript.awsRegion }}
-          dotEnvFileDir: ${{ parameters.envVarScript.dotEnvFileDir }}
-          dotEnvFileName: ${{ parameters.envVarScript.dotEnvFileName }}
-          dotEnvFileStoreName: ${{ parameters.envVarScript.dotEnvFileStoreName }}
-          dotEnvFileArtifactName: ${{ parameters.envVarScript.dotEnvFileArtifactName }}
+      customScript: ${{ parameters.envVarScript.customScript }}
+      awsSSMParamPathList: ${{ parameters.envVarScript.awsSSMParamPathList }}
+      awsRegion: ${{ parameters.envVarScript.awsRegion }}
+      dotEnvFileDir: ${{ parameters.envVarScript.dotEnvFileDir }}
+      dotEnvFileName: ${{ parameters.envVarScript.dotEnvFileName }}
+      dotEnvFileStoreName: ${{ parameters.envVarScript.dotEnvFileStoreName }}
+      dotEnvFileArtifactName: ${{ parameters.envVarScript.dotEnvFileArtifactName }}
 
-          tfChildDir: ${{ parameters.build.tfChildDir }}
+      tfChildDir: ${{ parameters.build.tfChildDir }}
 
-          dkrFile: ${{ parameters.build.dkrFile }}
-          dkrImageRepoName: ${{ parameters.build.dkrImageRepoName }}
-          dkrImageTag: ${{ parameters.build.dkrImageTag }}
+      dkrFile: ${{ parameters.build.dkrFile }}
+      dkrImageRepoName: ${{ parameters.build.dkrImageRepoName }}
+      dkrImageTag: ${{ parameters.build.dkrImageTag }}
 
-          artifactName: ${{ parameters.build.artifactName }}
-          artifactDir: ${{ parameters.build.artifactDir }}
+      artifactName: ${{ parameters.build.artifactName }}
+      artifactDir: ${{ parameters.build.artifactDir }}
 
-      - ${{ each item in parameters.test }}:
-          - ${{ if eq(item.environmentName, 'local') }}:
-              - template: ./stages/test.yml
+  - ${{ each item in parameters.test }}:
+      - ${{ if eq(item.environmentName, 'local') }}:
+          - template: ./stages/test.yml
+            parameters:
+              projectName: ${{ parameters.projectName }}
+              testType: ${{ item.testType }}
+              environmentName: ${{ item.environmentName }}
+              script: ${{ item.script }}
+
+              dependsOnStage:
+                - build
+
+              customScript: ${{ parameters.envVarScript.customScript }}
+              awsSSMParamPathList: ${{ parameters.envVarScript.awsSSMParamPathList }}
+              awsRegion: ${{ parameters.envVarScript.awsRegion }}
+              dotEnvFileDir: ${{ parameters.envVarScript.dotEnvFileDir }}
+              dotEnvFileName: ${{ parameters.envVarScript.dotEnvFileName }}
+              dotEnvFileStoreName: ${{ parameters.envVarScript.dotEnvFileStoreName }}
+              dotEnvFileArtifactName: ${{ parameters.envVarScript.dotEnvFileArtifactName }}
+
+  - ${{ if ne(parameters.deployProjectType, '') }}:
+      - ${{ each deploy in parameters.deploy }}:
+          - ${{ if eq(deploy.environmentName, 'qa') }}:
+              - template: ./stages/deploy.yml
                 parameters:
                   projectName: ${{ parameters.projectName }}
-                  testType: ${{ item.testType }}
-                  environmentName: ${{ item.environmentName }}
-                  script: ${{ item.script }}
+                  projectType: ${{ parameters.deployProjectType }}
 
                   dependsOnStage:
-                    - build
+                    - test_local_unit
+                    - test_local_int
+
+                  artifactName: ${{ parameters.build.artifactName }}
+                  environmentName: ${{ deploy.environmentName }}
+                  tfChildDir: ${{ deploy.tfChildDir }}
+                  dkrImageRepoName: ${{ deploy.dkrImageRepoName }}
+                  dkrImageTag: ${{ deploy.dkrImageTag }}
+                  dist: ${{ deploy.dist }}
 
                   customScript: ${{ parameters.envVarScript.customScript }}
                   awsSSMParamPathList: ${{ parameters.envVarScript.awsSSMParamPathList }}
@@ -94,73 +120,46 @@ stages:
                   dotEnvFileStoreName: ${{ parameters.envVarScript.dotEnvFileStoreName }}
                   dotEnvFileArtifactName: ${{ parameters.envVarScript.dotEnvFileArtifactName }}
 
-      - ${{ if ne(parameters.deployProjectType, '') }}:
-          - ${{ each deploy in parameters.deploy }}:
-              - ${{ if eq(deploy.environmentName, 'qa') }}:
-                  - template: ./stages/deploy.yml
-                    parameters:
-                      projectName: ${{ parameters.projectName }}
-                      projectType: ${{ parameters.deployProjectType }}
+              - ${{ each test in parameters.test }}:
+                  - ${{ if and(eq(test.environmentName, deploy.environmentName), eq(test.testType, 'int')) }}:
+                      - template: ./stages/test.yml
+                        parameters:
+                          projectName: ${{ parameters.projectName }}
+                          testType: ${{ test.testType }}
+                          environmentName: ${{ test.environmentName }}
+                          script: ${{ test.script }}
 
-                      dependsOnStage:
-                        - test_local_unit
-                        - test_local_int
+                          dependsOnStage:
+                            - deploy_qa
 
-                      artifactName: ${{ parameters.build.artifactName }}
-                      environmentName: ${{ deploy.environmentName }}
-                      tfChildDir: ${{ deploy.tfChildDir }}
-                      dkrImageRepoName: ${{ deploy.dkrImageRepoName }}
-                      dkrImageTag: ${{ deploy.dkrImageTag }}
-                      dist: ${{ deploy.dist }}
+                          customScript: ${{ parameters.envVarScript.customScript }}
+                          awsSSMParamPathList: ${{ parameters.envVarScript.awsSSMParamPathList }}
+                          awsRegion: ${{ parameters.envVarScript.awsRegion }}
+                          dotEnvFileDir: ${{ parameters.envVarScript.dotEnvFileDir }}
+                          dotEnvFileName: ${{ parameters.envVarScript.dotEnvFileName }}
+                          dotEnvFileStoreName: ${{ parameters.envVarScript.dotEnvFileStoreName }}
+                          dotEnvFileArtifactName: ${{ parameters.envVarScript.dotEnvFileArtifactName }}
 
-                      customScript: ${{ parameters.envVarScript.customScript }}
-                      awsSSMParamPathList: ${{ parameters.envVarScript.awsSSMParamPathList }}
-                      awsRegion: ${{ parameters.envVarScript.awsRegion }}
-                      dotEnvFileDir: ${{ parameters.envVarScript.dotEnvFileDir }}
-                      dotEnvFileName: ${{ parameters.envVarScript.dotEnvFileName }}
-                      dotEnvFileStoreName: ${{ parameters.envVarScript.dotEnvFileStoreName }}
-                      dotEnvFileArtifactName: ${{ parameters.envVarScript.dotEnvFileArtifactName }}
+          - ${{ if eq(deploy.environmentName, 'prod') }}:
+              - template: ./stages/deploy.yml
+                parameters:
+                  projectName: ${{ parameters.projectName }}
+                  projectType: ${{ parameters.deployProjectType }}
 
-                  - ${{ each test in parameters.test }}:
-                      - ${{ if and(eq(test.environmentName, deploy.environmentName), eq(test.testType, 'int')) }}:
-                          - template: ./stages/test.yml
-                            parameters:
-                              projectName: ${{ parameters.projectName }}
-                              testType: ${{ test.testType }}
-                              environmentName: ${{ test.environmentName }}
-                              script: ${{ test.script }}
+                  dependsOnStage:
+                    - test_qa_int
 
-                              dependsOnStage:
-                                - deploy_qa
+                  environmentName: ${{ deploy.environmentName }}
+                  artifactName: ${{ parameters.build.artifactName }}
+                  tfChildDir: ${{ deploy.tfChildDir }}
+                  dkrImageRepoName: ${{ deploy.dkrImageRepoName }}
+                  dkrImageTag: ${{ deploy.dkrImageTag }}
+                  dist: ${{ deploy.dist }}
 
-                              customScript: ${{ parameters.envVarScript.customScript }}
-                              awsSSMParamPathList: ${{ parameters.envVarScript.awsSSMParamPathList }}
-                              awsRegion: ${{ parameters.envVarScript.awsRegion }}
-                              dotEnvFileDir: ${{ parameters.envVarScript.dotEnvFileDir }}
-                              dotEnvFileName: ${{ parameters.envVarScript.dotEnvFileName }}
-                              dotEnvFileStoreName: ${{ parameters.envVarScript.dotEnvFileStoreName }}
-                              dotEnvFileArtifactName: ${{ parameters.envVarScript.dotEnvFileArtifactName }}
-
-              - ${{ if eq(deploy.environmentName, 'prod') }}:
-                  - template: ./stages/deploy.yml
-                    parameters:
-                      projectName: ${{ parameters.projectName }}
-                      projectType: ${{ parameters.deployProjectType }}
-
-                      dependsOnStage:
-                        - test_qa_int
-
-                      environmentName: ${{ deploy.environmentName }}
-                      artifactName: ${{ parameters.build.artifactName }}
-                      tfChildDir: ${{ deploy.tfChildDir }}
-                      dkrImageRepoName: ${{ deploy.dkrImageRepoName }}
-                      dkrImageTag: ${{ deploy.dkrImageTag }}
-                      dist: ${{ deploy.dist }}
-
-                      customScript: ${{ parameters.envVarScript.customScript }}
-                      awsSSMParamPathList: ${{ parameters.envVarScript.awsSSMParamPathList }}
-                      awsRegion: ${{ parameters.envVarScript.awsRegion }}
-                      dotEnvFileDir: ${{ parameters.envVarScript.dotEnvFileDir }}
-                      dotEnvFileName: ${{ parameters.envVarScript.dotEnvFileName }}
-                      dotEnvFileStoreName: ${{ parameters.envVarScript.dotEnvFileStoreName }}
-                      dotEnvFileArtifactName: ${{ parameters.envVarScript.dotEnvFileArtifactName }}
+                  customScript: ${{ parameters.envVarScript.customScript }}
+                  awsSSMParamPathList: ${{ parameters.envVarScript.awsSSMParamPathList }}
+                  awsRegion: ${{ parameters.envVarScript.awsRegion }}
+                  dotEnvFileDir: ${{ parameters.envVarScript.dotEnvFileDir }}
+                  dotEnvFileName: ${{ parameters.envVarScript.dotEnvFileName }}
+                  dotEnvFileStoreName: ${{ parameters.envVarScript.dotEnvFileStoreName }}
+                  dotEnvFileArtifactName: ${{ parameters.envVarScript.dotEnvFileArtifactName }}
