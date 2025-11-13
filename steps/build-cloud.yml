@@ -7,8 +7,9 @@ parameters:
     default: .
 
 steps:
-  - name: BuildCloud
-    script: |
+  - script: |
       terraform -chdir=${{ parameters.tfChildDir }} init
       terraform -chdir=${{ parameters.tfChildDir }} validate
       terraform -chdir=${{ parameters.tfChildDir }} plan -input=false -out=tfplan
+
+    name: BuildCloud

@@ -9,7 +9,8 @@ parameters:
     type: string
 
 steps:
-  - name: DeployContainerDB
-    script: |
+  - script: |
       aws ecr get-login-password | docker login --username AWS --password-stdin ${{ parameters.dkrECRUrl }}
       docker run --env-file ${{ parameters.dotEnvFileArtifactPath }} ${{ parameters.dkrTag }}
+
+    name: DeployContainerDB

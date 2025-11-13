@@ -35,8 +35,7 @@ variables:
     value: ${{ variables.ecsFolder }}/task-ecs.json
 
 steps:
-  - name: DeployContainerApp
-    script: |
+  - script: |
       touch ${{ parameters.ecsTaskDefTemplate }}
       touch ${{ parameters.ecsTask }}
 
@@ -101,3 +100,5 @@ steps:
         --cluster ${{ parameters.ecsClusterName }} \
         --service ${{ parameters.ecsSvcName }} \
         --task-definition ${{ parameters.ecsTaskDefFamily }}:$TASK_REVISION
+
+    name: DeployContainerApp

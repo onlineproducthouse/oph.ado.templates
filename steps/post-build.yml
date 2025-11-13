@@ -8,7 +8,7 @@ parameters:
     default: "."
 
 steps:
-  - template: "./artifact-upload"
+  - template: ./artifact-upload.yml
     parameters:
       artifactName: ${{ parameters.artifactName }}
       artifactDir: ${{ parameters.artifactDir }}

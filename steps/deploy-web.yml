@@ -12,8 +12,7 @@ parameters:
     type: string
 
 steps:
-  - name: DeployWeb
-    script: |
+  - script: |
       aws s3 sync ${{ parameters.dist }} "s3://${{ parameters.hostBucket }}"
 
       echo '{
@@ -27,3 +26,5 @@ steps:
       echo $(aws cloudfront create-invalidation \
         --distribution-id ${{ parameters.cdnId }} \
         --invalidation-batch "file://${{ parameters.invalidateBatchPath }}")
+
+    name: DeployWeb

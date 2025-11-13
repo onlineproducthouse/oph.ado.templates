@@ -41,8 +41,8 @@ jobs:
     condition: or(ne(parameters.customScript, ''), ne(parameters.awsSSMParamPathList, ''))
     steps:
       - ${{ if ne(parameters.customScript, '') }}:
-          - name: LoadVariables
-            script: ${{ parameters.customScript }}
+          - script: ${{ parameters.customScript }}
+            name: LoadVariables
 
       - ${{ else }}:
           - template: ../steps/load-ssm-params.yml

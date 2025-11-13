@@ -25,7 +25,8 @@ jobs:
         parameters:
           artifactName: ${{ parameters.dotEnvFileArtifactName }}
 
-      - name: Run
-        script: |
+      - script: |
           source $(echo "${{ parameters.dotEnvFilePath }}")
           ${{ parameters.script }}
+
+        name: Run
