@@ -89,7 +89,7 @@ stages:
       dotEnvFileDir: ${{ parameters.dotEnvFileDir }}
       dotEnvFileName: ${{ parameters.dotEnvFileName }}
       dotEnvFileStoreName: ${{ parameters.dotEnvFileStoreName }}
-      dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
+      artifactName: ${{ parameters.dotEnvFileArtifactName }}
 
   - stage: build
     displayName: build - ${{ parameters.projectName }}

@@ -29,7 +29,7 @@ parameters:
   # Default = empty string.
   # Required if intending to retrieve secrets from AWS SSM Parameter Store.
   # If left empty, env file artifact will not be published
-  - name: dotEnvFileArtifactName
+  - name: artifactName
     type: string
     default: ""
 
@@ -45,4 +45,4 @@ stages:
           dotEnvFileDir: ${{ parameters.dotEnvFileDir }}
           dotEnvFileName: ${{ parameters.dotEnvFileName }}
           dotEnvFileStoreName: ${{ parameters.dotEnvFileStoreName }}
-          dotEnvFileArtifactName: ${{ parameters.dotEnvFileArtifactName }}
+          artifactName: ${{ parameters.artifactName }}
